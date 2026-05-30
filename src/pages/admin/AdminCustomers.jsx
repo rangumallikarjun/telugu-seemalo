@@ -9,9 +9,9 @@ export default function AdminCustomers() {
   const load = () => getAllUsers().then(u => { setUsers(u); setLoading(false); });
   useEffect(() => { load(); }, []);
 
-  const handleRole = async (docId, role) => {
-    await updateUserRole(docId, role);
-    setUsers(prev => prev.map(u => u.docId === docId ? { ...u, role } : u));
+  const handleRole = async (uid, role) => {
+    await updateUserRole(uid, role);
+    setUsers(prev => prev.map(u => u.uid === uid ? { ...u, role } : u));
   };
 
   const filtered = users.filter(u =>
@@ -43,7 +43,7 @@ export default function AdminCustomers() {
             </thead>
             <tbody>
               {filtered.map(u => (
-                <tr key={u.docId}>
+                <tr key={u.uid}>
                   <td><strong>{u.name || "—"}</strong></td>
                   <td style={{fontSize:".85rem",color:"#6B4C38"}}>{u.email}</td>
                   <td>
@@ -56,7 +56,7 @@ export default function AdminCustomers() {
                   </td>
                   <td>
                     <select className="status-select" value={u.role || "customer"}
-                      onChange={e => handleRole(u.docId, e.target.value)}>
+                      onChange={e => handleRole(u.uid, e.target.value)}>
                       <option value="customer">Customer</option>
                       <option value="admin">Admin</option>
                     </select>

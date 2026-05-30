@@ -64,9 +64,11 @@ function StoryScroll({ setPage }) {
     const onScroll = () => {
       const el = sectionRef.current;
       if (!el) return;
-      const rect    = el.getBoundingClientRect();
-      const scrolled = -(rect.top - 64);
-      const visibleH = window.innerHeight - 64;
+      const isMob = window.innerWidth < 768;
+      const rect     = el.getBoundingClientRect();
+      const offset   = isMob ? 0 : 64;
+      const scrolled = -(rect.top - offset);
+      const visibleH = window.innerHeight - offset;
       const total    = el.offsetHeight - visibleH;
       if (total <= 0) return;
       const p = Math.max(0, Math.min(1 - 1e-9, scrolled / total));
@@ -93,107 +95,163 @@ function StoryScroll({ setPage }) {
   const ch = STORY[chapter];
   const timelinePct = `${(chapter / (STORY.length - 1)) * 100}%`;
 
-  /* ── shared background panels (used by both layouts) ── */
-  const BgPanels = () => STORY.map((c, i) => (
-    <div key={i} style={{
-      position: "absolute", inset: 0,
-      background: c.bg,
-      opacity: i === chapter ? 1 : 0,
-      transform: `scale(${i === chapter ? 1 : 1.06})`,
-      transition: "opacity .85s ease, transform 1.3s ease",
-    }}>
-      <div style={{
-        position: "absolute",
-        fontSize: mobile ? "72vw" : "min(38vw, 280px)",
-        top: mobile ? "18%" : "50%", left: "50%",
-        transform: mobile ? "translateX(-50%) rotate(-12deg)" : "translate(-50%,-50%) rotate(-12deg)",
-        lineHeight: 1, opacity: .13, userSelect: "none",
-      }}>{c.emoji}</div>
-      <div style={{
-        position: "absolute", top: "8%", right: "6%",
-        fontFamily: "'Noto Serif Telugu','Mandali',serif",
-        fontSize: mobile ? "clamp(2.4rem,13vw,4.5rem)" : "clamp(3rem,7vw,6rem)",
-        fontWeight: 700, color: c.accent, opacity: .13, lineHeight: 1, userSelect: "none",
-      }}>{c.telugu}</div>
-    </div>
-  ));
 
   /* ════════════════════ MOBILE ════════════════════ */
   if (mobile) return (
-    <div ref={sectionRef} style={{ height: `calc(${STORY.length} * (100vh - 64px))`, position: "relative", background: "#0E0A06" }}>
-      <div style={{ position: "sticky", top: 64, height: "calc(100vh - 64px)", overflow: "hidden", background: "#0E0A06" }}>
+    <div ref={sectionRef} style={{ height: `calc(${STORY.length} * 100vh)`, position: "relative", background: "#0E0A06" }}>
+      <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
 
-        <BgPanels />
+        {/* full-bleed chapter gradients */}
+        {STORY.map((c, i) => (
+          <div key={i} style={{
+            position: "absolute", inset: 0, background: c.bg,
+            opacity: i === chapter ? 1 : 0,
+            transform: `scale(${i === chapter ? 1 : 1.04})`,
+            transition: "opacity .9s ease, transform 1.4s ease",
+          }}>
+            {/* oversized bg emoji */}
+            <div style={{
+              position: "absolute", fontSize: "72vw", lineHeight: 1,
+              top: "2%", left: "50%", transform: "translateX(-50%) rotate(-8deg)",
+              opacity: .13, userSelect: "none",
+            }}>{c.emoji}</div>
+          </div>
+        ))}
 
-        {/* bottom-to-top dark gradient for text legibility */}
+        {/* telugu + chapter number watermarks */}
         <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3,
-          background: "linear-gradient(to bottom, transparent 15%, rgba(6,3,1,.55) 42%, rgba(6,3,1,.96) 68%, #060301 100%)",
-        }}/>
+          position: "absolute", top: "12%", right: "5%", zIndex: 3,
+          fontFamily: "'Noto Serif Telugu','Mandali',serif",
+          fontSize: "clamp(2rem,11vw,3.4rem)", fontWeight: 700,
+          color: ch.accent, opacity: .2, lineHeight: 1,
+          userSelect: "none", transition: "color .8s ease",
+        }}>{ch.telugu}</div>
 
-        {/* faded chapter number top-right */}
         <div style={{
-          position: "absolute", top: 16, right: 18, zIndex: 4,
+          position: "absolute", top: "12%", left: "5%", zIndex: 3,
           fontFamily: "'Cormorant Garamond',serif",
-          fontSize: "clamp(5rem,26vw,8rem)", fontWeight: 700,
-          color: ch.accent, opacity: .08, lineHeight: 1,
-          userSelect: "none", letterSpacing: "-0.04em", transition: "color .8s ease",
+          fontSize: "clamp(3.5rem,20vw,6rem)", fontWeight: 700,
+          color: ch.accent, opacity: .1, lineHeight: 1,
+          userSelect: "none", letterSpacing: "-0.04em",
+          transition: "color .8s ease",
         }}>{String(chapter + 1).padStart(2, "0")}</div>
 
-        {/* text block pinned to bottom */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 22px 26px", zIndex: 5 }}>
+        {/* centred emoji — lower and larger */}
+        <div style={{
+          position: "absolute", top: "22%", left: "50%",
+          transform: "translateX(-50%)", zIndex: 4, textAlign: "center",
+        }}>
+          <div key={`em-${chapter}`} style={{
+            fontSize: "clamp(5.5rem,24vw,8rem)", lineHeight: 1,
+            filter: `drop-shadow(0 0 32px ${ch.accent}70)`,
+            animation: "storyFadeUp .38s ease both",
+            display: "block", position: "relative", zIndex: 2,
+          }}>{ch.emoji}</div>
+          {[86, 136, 192].map((sz, ri) => (
+            <div key={ri} style={{
+              position: "absolute", top: "50%", left: "50%",
+              width: sz, height: sz, borderRadius: "50%",
+              border: `1px solid ${ch.accent}${["44","24","10"][ri]}`,
+              transform: "translate(-50%,-50%)",
+              transition: "border-color .8s ease",
+              pointerEvents: "none",
+            }}/>
+          ))}
+        </div>
 
+        {/* frosted glass card — starts at 52% → fills bottom */}
+        <div style={{
+          position: "absolute", top: "52%", left: 0, right: 0, bottom: 0,
+          zIndex: 5,
+          background: "rgba(8,5,2,.9)",
+          backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+          borderTopLeftRadius: 26, borderTopRightRadius: 26,
+          borderTop: `1px solid ${ch.accent}30`,
+          padding: "16px 20px 18px",
+          display: "flex", flexDirection: "column",
+          transition: "border-color .8s ease",
+          overflow: "hidden",
+        }}>
+
+          {/* accent rule */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{
+              width: 28, height: 2.5, borderRadius: 2, background: ch.accent,
+              boxShadow: `0 0 10px ${ch.accent}cc`,
+              transition: "background .8s ease",
+            }}/>
+            <div style={{ flex: 1, height: 1, background: `${ch.accent}18`, borderRadius: 1 }}/>
+            <span style={{
+              fontSize: ".56rem", fontWeight: 700, letterSpacing: ".1em",
+              color: "rgba(255,255,255,.2)", textTransform: "uppercase",
+            }}>{String(chapter + 1).padStart(2, "0")} / {String(STORY.length).padStart(2, "0")}</span>
+          </div>
+
+          {/* eyebrow */}
           <div key={`ey-m-${chapter}`} style={{
-            fontSize: ".66rem", fontWeight: 700, letterSpacing: ".18em",
-            textTransform: "uppercase", color: ch.accent, marginBottom: 9,
-            animation: "storyFadeUp .42s ease both",
+            fontSize: ".75rem", fontWeight: 700, letterSpacing: ".18em",
+            textTransform: "uppercase", color: ch.accent, marginBottom: 8,
+            animation: "storyFadeUp .34s ease both",
           }}>{ch.eyebrow}</div>
 
+          {/* title */}
           <h2 key={`ti-m-${chapter}`} style={{
             fontFamily: "'Cormorant Garamond',serif",
-            fontSize: "clamp(1.8rem,8vw,2.8rem)", fontWeight: 700,
-            color: "#E8D5B0", lineHeight: 1.15, margin: "0 0 11px",
-            animation: "storyFadeUp .48s .04s ease both",
+            fontSize: "clamp(2.2rem,9.5vw,3.2rem)", fontWeight: 700,
+            color: "#EAD9BC", lineHeight: 1.13, margin: "0 0 12px",
+            animation: "storyFadeUp .40s .04s ease both",
           }}>{ch.title[0]} {ch.title[1]}</h2>
 
+          {/* body */}
           <p key={`bo-m-${chapter}`} style={{
-            color: "rgba(195,168,142,.78)", fontSize: ".87rem", lineHeight: 1.65,
-            marginBottom: 13, WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
-            display: "-webkit-box", overflow: "hidden",
-            animation: "storyFadeUp .52s .08s ease both",
+            color: "rgba(165,128,95,.95)", fontSize: "1rem", lineHeight: 1.7,
+            marginBottom: 0,
+            display: "-webkit-box", WebkitLineClamp: 3,
+            WebkitBoxOrient: "vertical", overflow: "hidden",
+            animation: "storyFadeUp .44s .08s ease both",
           }}>{ch.body}</p>
 
-          {/* stat */}
+          {/* spacer pushes stat + progress to bottom */}
+          <div style={{ flex: 1 }} />
+
+          {/* stat pill */}
           <div key={`st-m-${chapter}`} style={{
-            display: "flex", alignItems: "baseline", gap: 8, marginBottom: 18,
-            animation: "storyFadeUp .52s .12s ease both",
+            display: "inline-flex", alignItems: "center", gap: 10,
+            padding: "9px 14px", borderRadius: 10, alignSelf: "flex-start",
+            background: `${ch.accent}16`, border: `1px solid ${ch.accent}32`,
+            marginBottom: 14,
+            animation: "storyFadeUp .44s .12s ease both",
+            transition: "background .8s ease, border-color .8s ease",
           }}>
             <span style={{
               fontFamily: "'Cormorant Garamond',serif",
-              fontSize: "clamp(1.9rem,7vw,2.6rem)", fontWeight: 700,
+              fontSize: "clamp(2rem,8.5vw,2.8rem)", fontWeight: 700,
               color: ch.accent, lineHeight: 1,
             }}>{ch.stat.value}</span>
+            <div style={{ width: 1, height: 28, background: `${ch.accent}38` }}/>
             <span style={{
-              fontSize: ".66rem", fontWeight: 700, letterSpacing: ".12em",
-              textTransform: "uppercase", color: "rgba(255,255,255,.3)",
+              fontSize: ".72rem", fontWeight: 700, letterSpacing: ".12em",
+              textTransform: "uppercase", color: "rgba(255,255,255,.4)", lineHeight: 1.4,
             }}>{ch.stat.label}</span>
           </div>
 
           {chapter === STORY.length - 1 && (
             <button key="cta-m" onClick={() => setPage("about")} style={{
               background: "#C9901A", border: "none", borderRadius: 10,
-              color: "#fff", padding: "11px 22px", cursor: "pointer",
-              fontWeight: 700, fontSize: ".84rem", display: "block", marginBottom: 18,
-              animation: "storyFadeUp .52s .15s ease both",
+              color: "#fff", padding: "11px 20px", cursor: "pointer",
+              fontWeight: 700, fontSize: ".82rem", width: "100%",
+              marginBottom: 12,
+              animation: "storyFadeUp .44s .15s ease both",
             }}>Discover Our Full Story →</button>
           )}
 
           {/* progress bar */}
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 5, marginTop: 14 }}>
             {STORY.map((s, i) => (
               <div key={i} style={{
-                height: 2.5, borderRadius: 2, flex: i === chapter ? "0 0 28px" : "0 0 8px",
-                background: i === chapter ? ch.accent : "rgba(255,255,255,.18)",
+                height: 2.5, borderRadius: 2,
+                flex: i === chapter ? "0 0 24px" : "0 0 6px",
+                background: i === chapter ? ch.accent : "rgba(255,255,255,.13)",
                 transition: "all .4s ease",
               }}/>
             ))}
