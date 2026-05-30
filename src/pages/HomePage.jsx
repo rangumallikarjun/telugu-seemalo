@@ -5,6 +5,324 @@ import { getProducts } from "../firebase/productService";
 import ProductCard from "../components/ProductCard";
 import MarqueeStrip from "../components/MarqueeStrip";
 
+// ── Our Story chapters ────────────────────────────────────────────────────────
+const STORY = [
+  {
+    eyebrow: "The Origin · 1700s",
+    title:   ["Born from the", "Banks of Manair"],
+    body:    "Deep in Karimnagar, Telangana, artisans discovered a technique to coat hand-turned wood with natural lacquer — vibrant reds, deep blacks, pure whites. A tradition older than 300 years.",
+    bg:      "linear-gradient(160deg, #2A1208 0%, #6B3A10 55%, #1A0A04 100%)",
+    accent:  "#E8A83A",
+    emoji:   "🏺",
+    telugu:  "కళ",
+    tag:     "Since 1700s",
+    stat:    { value: "300+", label: "Years of Heritage" },
+  },
+  {
+    eyebrow: "The Artisans · Present Day",
+    title:   ["48 Families,", "One Living Art"],
+    body:    "Today 48 artisan families in Karimnagar carry this tradition forward — passing precise techniques from parent to child, each family with its own unmistakable signature style.",
+    bg:      "linear-gradient(160deg, #0A1A0A 0%, #1E4A18 55%, #081408 100%)",
+    accent:  "#6FC870",
+    emoji:   "👨‍🎨",
+    telugu:  "కళాకారుడు",
+    tag:     "48 Artisan Families",
+    stat:    { value: "48", label: "Artisan Families" },
+  },
+  {
+    eyebrow: "The Craft · GI Certified",
+    title:   ["Every Stroke,", "A Story"],
+    body:    "Natural lacquer, hand-turned wood, tools passed through generations. Each piece takes 3–7 days to complete entirely by hand. No machines. No shortcuts. Pure craft.",
+    bg:      "linear-gradient(160deg, #080A20 0%, #1A1A60 55%, #080A20 100%)",
+    accent:  "#7AABFF",
+    emoji:   "🎨",
+    telugu:  "చేతిపని",
+    tag:     "GI-Tagged · Certified",
+    stat:    { value: "3–7", label: "Days Per Piece" },
+  },
+  {
+    eyebrow: "The Legacy · Yours",
+    title:   ["Heritage Lives", "in Your Home"],
+    body:    "When you bring a Telugu Seemalo piece home, you carry 300 years of culture — a living artwork that connects your space to generations of skill, love, and Telugu heritage.",
+    bg:      "linear-gradient(160deg, #1A0808 0%, #4A1818 55%, #180606 100%)",
+    accent:  "#E8620A",
+    emoji:   "🏠",
+    telugu:  "వారసత్వం",
+    tag:     "Ships from Karimnagar",
+    stat:    { value: "10k+", label: "Happy Homes" },
+  },
+];
+
+// ── Apple-style sticky scroll story ──────────────────────────────────────────
+function StoryScroll({ setPage }) {
+  const sectionRef = useRef(null);
+  const [chapter, setChapter] = useState(0);
+  const [tilt, setTilt]       = useState({ x: 0, y: 0 });
+  const [mobile, setMobile]   = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = sectionRef.current;
+      if (!el) return;
+      const rect    = el.getBoundingClientRect();
+      const scrolled = -(rect.top - 64);
+      const visibleH = window.innerHeight - 64;
+      const total    = el.offsetHeight - visibleH;
+      if (total <= 0) return;
+      const p = Math.max(0, Math.min(1 - 1e-9, scrolled / total));
+      setChapter(Math.floor(p * STORY.length));
+    };
+    const onResize = () => { setMobile(window.innerWidth < 768); onScroll(); };
+    window.addEventListener("scroll", onScroll,  { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    onResize();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  const handleTiltMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dx = (e.clientX - rect.left - rect.width  / 2) / (rect.width  / 2);
+    const dy = (e.clientY - rect.top  - rect.height / 2) / (rect.height / 2);
+    setTilt({ x: dy * -10, y: dx * 10 });
+  };
+  const resetTilt = () => setTilt({ x: 0, y: 0 });
+
+  const ch = STORY[chapter];
+  const timelinePct = `${(chapter / (STORY.length - 1)) * 100}%`;
+
+  /* ── shared background panels (used by both layouts) ── */
+  const BgPanels = () => STORY.map((c, i) => (
+    <div key={i} style={{
+      position: "absolute", inset: 0,
+      background: c.bg,
+      opacity: i === chapter ? 1 : 0,
+      transform: `scale(${i === chapter ? 1 : 1.06})`,
+      transition: "opacity .85s ease, transform 1.3s ease",
+    }}>
+      <div style={{
+        position: "absolute",
+        fontSize: mobile ? "72vw" : "min(38vw, 280px)",
+        top: mobile ? "18%" : "50%", left: "50%",
+        transform: mobile ? "translateX(-50%) rotate(-12deg)" : "translate(-50%,-50%) rotate(-12deg)",
+        lineHeight: 1, opacity: .13, userSelect: "none",
+      }}>{c.emoji}</div>
+      <div style={{
+        position: "absolute", top: "8%", right: "6%",
+        fontFamily: "'Noto Serif Telugu','Mandali',serif",
+        fontSize: mobile ? "clamp(2.4rem,13vw,4.5rem)" : "clamp(3rem,7vw,6rem)",
+        fontWeight: 700, color: c.accent, opacity: .13, lineHeight: 1, userSelect: "none",
+      }}>{c.telugu}</div>
+    </div>
+  ));
+
+  /* ════════════════════ MOBILE ════════════════════ */
+  if (mobile) return (
+    <div ref={sectionRef} style={{ height: `calc(${STORY.length} * (100vh - 64px))`, position: "relative", background: "#0E0A06" }}>
+      <div style={{ position: "sticky", top: 64, height: "calc(100vh - 64px)", overflow: "hidden", background: "#0E0A06" }}>
+
+        <BgPanels />
+
+        {/* bottom-to-top dark gradient for text legibility */}
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3,
+          background: "linear-gradient(to bottom, transparent 15%, rgba(6,3,1,.55) 42%, rgba(6,3,1,.96) 68%, #060301 100%)",
+        }}/>
+
+        {/* faded chapter number top-right */}
+        <div style={{
+          position: "absolute", top: 16, right: 18, zIndex: 4,
+          fontFamily: "'Cormorant Garamond',serif",
+          fontSize: "clamp(5rem,26vw,8rem)", fontWeight: 700,
+          color: ch.accent, opacity: .08, lineHeight: 1,
+          userSelect: "none", letterSpacing: "-0.04em", transition: "color .8s ease",
+        }}>{String(chapter + 1).padStart(2, "0")}</div>
+
+        {/* text block pinned to bottom */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 22px 26px", zIndex: 5 }}>
+
+          <div key={`ey-m-${chapter}`} style={{
+            fontSize: ".66rem", fontWeight: 700, letterSpacing: ".18em",
+            textTransform: "uppercase", color: ch.accent, marginBottom: 9,
+            animation: "storyFadeUp .42s ease both",
+          }}>{ch.eyebrow}</div>
+
+          <h2 key={`ti-m-${chapter}`} style={{
+            fontFamily: "'Cormorant Garamond',serif",
+            fontSize: "clamp(1.8rem,8vw,2.8rem)", fontWeight: 700,
+            color: "#E8D5B0", lineHeight: 1.15, margin: "0 0 11px",
+            animation: "storyFadeUp .48s .04s ease both",
+          }}>{ch.title[0]} {ch.title[1]}</h2>
+
+          <p key={`bo-m-${chapter}`} style={{
+            color: "rgba(195,168,142,.78)", fontSize: ".87rem", lineHeight: 1.65,
+            marginBottom: 13, WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
+            display: "-webkit-box", overflow: "hidden",
+            animation: "storyFadeUp .52s .08s ease both",
+          }}>{ch.body}</p>
+
+          {/* stat */}
+          <div key={`st-m-${chapter}`} style={{
+            display: "flex", alignItems: "baseline", gap: 8, marginBottom: 18,
+            animation: "storyFadeUp .52s .12s ease both",
+          }}>
+            <span style={{
+              fontFamily: "'Cormorant Garamond',serif",
+              fontSize: "clamp(1.9rem,7vw,2.6rem)", fontWeight: 700,
+              color: ch.accent, lineHeight: 1,
+            }}>{ch.stat.value}</span>
+            <span style={{
+              fontSize: ".66rem", fontWeight: 700, letterSpacing: ".12em",
+              textTransform: "uppercase", color: "rgba(255,255,255,.3)",
+            }}>{ch.stat.label}</span>
+          </div>
+
+          {chapter === STORY.length - 1 && (
+            <button key="cta-m" onClick={() => setPage("about")} style={{
+              background: "#C9901A", border: "none", borderRadius: 10,
+              color: "#fff", padding: "11px 22px", cursor: "pointer",
+              fontWeight: 700, fontSize: ".84rem", display: "block", marginBottom: 18,
+              animation: "storyFadeUp .52s .15s ease both",
+            }}>Discover Our Full Story →</button>
+          )}
+
+          {/* progress bar */}
+          <div style={{ display: "flex", gap: 6 }}>
+            {STORY.map((s, i) => (
+              <div key={i} style={{
+                height: 2.5, borderRadius: 2, flex: i === chapter ? "0 0 28px" : "0 0 8px",
+                background: i === chapter ? ch.accent : "rgba(255,255,255,.18)",
+                transition: "all .4s ease",
+              }}/>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ════════════════════ DESKTOP ════════════════════ */
+  return (
+    <div ref={sectionRef} style={{ height: `calc(${STORY.length} * (100vh - 64px))`, position: "relative", background: "#0E0A06" }}>
+      <div style={{
+        position: "sticky", top: 64, height: "calc(100vh - 64px)",
+        overflow: "hidden", display: "flex", background: "#0E0A06",
+      }}>
+
+        {/* ── Left text panel ────────────────────── */}
+        <div style={{
+          width: "44%", padding: "0 52px 0 72px",
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          position: "relative", zIndex: 2,
+          background: "linear-gradient(90deg, #0E0A06 82%, transparent 100%)",
+        }}>
+          {/* giant chapter number */}
+          <div style={{
+            position: "absolute", bottom: -10, left: 52,
+            fontFamily: "'Cormorant Garamond',serif",
+            fontSize: "clamp(7rem,16vw,12rem)", fontWeight: 700,
+            color: ch.accent, opacity: .07, lineHeight: 1,
+            userSelect: "none", pointerEvents: "none",
+            letterSpacing: "-0.04em", transition: "color .8s ease",
+          }}>{String(chapter + 1).padStart(2, "0")}</div>
+
+          {/* vertical timeline */}
+          <div style={{ position: "absolute", left: 26, top: "50%", transform: "translateY(-50%)", height: 160, width: 20, display: "flex", justifyContent: "center" }}>
+            <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,.1)", transform: "translateX(-50%)" }}/>
+            <div style={{
+              position: "absolute", left: "50%", top: 0, width: 1.5,
+              height: timelinePct, background: ch.accent, transform: "translateX(-50%)",
+              transition: "height .5s ease, background .8s ease",
+              boxShadow: `0 0 6px ${ch.accent}88`,
+            }}/>
+            {STORY.map((s, i) => (
+              <div key={i} style={{
+                position: "absolute", left: "50%",
+                top: `${(i / (STORY.length - 1)) * 100}%`,
+                transform: "translate(-50%,-50%)",
+                width: i === chapter ? 10 : 6, height: i === chapter ? 10 : 6,
+                borderRadius: "50%",
+                background: i <= chapter ? s.accent : "rgba(255,255,255,.18)",
+                border: i === chapter ? `2px solid ${s.accent}` : "none",
+                boxShadow: i === chapter ? `0 0 10px ${s.accent}` : "none",
+                transition: "all .35s ease", zIndex: 2,
+              }}/>
+            ))}
+          </div>
+
+          <div key={`ey-${chapter}`} style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".18em", textTransform: "uppercase", color: ch.accent, marginBottom: 18, animation: "storyFadeUp .45s ease both" }}>{ch.eyebrow}</div>
+          <h2 key={`ti-${chapter}`} style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(2.2rem,3.8vw,3.4rem)", fontWeight: 700, color: "#E8D5B0", lineHeight: 1.15, margin: "0 0 18px", animation: "storyFadeUp .5s .05s ease both" }}>{ch.title[0]}<br/>{ch.title[1]}</h2>
+          <p key={`bo-${chapter}`} style={{ color: "#8B7060", fontSize: ".96rem", lineHeight: 1.78, maxWidth: 380, marginBottom: 20, animation: "storyFadeUp .55s .1s ease both" }}>{ch.body}</p>
+
+          {/* stat */}
+          <div key={`st-${chapter}`} style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 32, animation: "storyFadeUp .55s .14s ease both" }}>
+            <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(2.4rem,4vw,3rem)", fontWeight: 700, color: ch.accent, lineHeight: 1 }}>{ch.stat.value}</span>
+            <span style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(255,255,255,.32)" }}>{ch.stat.label}</span>
+          </div>
+
+          {chapter === STORY.length - 1 && (
+            <button key="cta" onClick={() => setPage("about")} style={{ alignSelf: "flex-start", background: "#C9901A", border: "none", borderRadius: 10, color: "#fff", padding: "13px 28px", cursor: "pointer", fontWeight: 700, fontSize: ".88rem", letterSpacing: ".03em", animation: "storyFadeUp .55s .15s ease both" }}>
+              Discover Our Full Story →
+            </button>
+          )}
+        </div>
+
+        {/* ── Right visual panel ─────────────────── */}
+        <div onMouseMove={handleTiltMove} onMouseLeave={resetTilt}
+          style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          {STORY.map((c, i) => (
+            <div key={i} style={{
+              position: "absolute", inset: 0, background: c.bg,
+              opacity: i === chapter ? 1 : 0,
+              transform: `scale(${i === chapter ? 1 : 1.07})`,
+              transition: "opacity .85s ease, transform 1.3s ease",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <div style={{ position: "absolute", fontSize: "min(38vw,280px)", lineHeight: 1, opacity: .12, userSelect: "none", transform: "rotate(-12deg)" }}>{c.emoji}</div>
+              <div style={{ position: "absolute", top: "10%", right: "8%", fontFamily: "'Noto Serif Telugu','Mandali',serif", fontSize: "clamp(3rem,7vw,6rem)", fontWeight: 700, color: c.accent, opacity: .12, lineHeight: 1, userSelect: "none" }}>{c.telugu}</div>
+
+              {/* 3D-tilt card */}
+              <div style={{
+                position: "relative", zIndex: 2, textAlign: "center",
+                background: "rgba(0,0,0,.38)", backdropFilter: "blur(10px)",
+                borderRadius: 22, padding: "36px 52px", border: `1px solid ${c.accent}28`,
+                transform: i === chapter ? `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` : "perspective(900px) rotateX(0deg) rotateY(0deg)",
+                transition: tilt.x === 0 && tilt.y === 0 ? "transform .6s ease" : "transform .08s ease",
+                boxShadow: i === chapter && (tilt.x !== 0 || tilt.y !== 0)
+                  ? `${-tilt.y * 2}px ${tilt.x * 2}px 32px rgba(0,0,0,.45), inset 0 0 24px ${c.accent}12`
+                  : "0 20px 60px rgba(0,0,0,.3)",
+              }}>
+                <div style={{ fontSize: "clamp(3rem,7vw,5.5rem)", marginBottom: 14 }}>{c.emoji}</div>
+                <div style={{ fontFamily: "'Noto Serif Telugu','Mandali',serif", fontSize: "clamp(1.6rem,3.5vw,2.8rem)", color: c.accent, fontWeight: 700, marginBottom: 10 }}>{c.telugu}</div>
+                <div style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(255,255,255,.45)" }}>{c.tag}</div>
+              </div>
+
+              {[200, 320, 450].map((sz, ri) => (
+                <div key={ri} style={{ position: "absolute", width: sz, height: sz, border: `1px solid ${c.accent}15`, borderRadius: "50%", top: "50%", left: "50%", transform: "translate(-50%,-50%)", pointerEvents: "none" }}/>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* right-edge dot nav */}
+        <div style={{ position: "absolute", right: 22, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: 10, zIndex: 10 }}>
+          {STORY.map((_, i) => (
+            <div key={i} style={{
+              width: i === chapter ? 8 : 5, height: i === chapter ? 8 : 5,
+              borderRadius: "50%",
+              background: i === chapter ? ch.accent : "rgba(255,255,255,.22)",
+              transition: "all .3s ease",
+              boxShadow: i === chapter ? `0 0 8px ${ch.accent}` : "none",
+            }}/>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 1. Typewriter ─────────────────────────────────────────────────────────────
 const PHRASES = [
   "Handcrafted with Centuries of Tradition",
@@ -613,50 +931,12 @@ export default function HomePage({ setPage, onOpen, onAdd }) {
         </div>
       </div>
 
-      <Wave from="#fff" to="#18100A" flip />
+      <Wave from="#fff" to="#0E0A06" flip />
 
-      {/* OUR STORY */}
-      <div className="story-sec">
-        <div className="story-grid">
-          <Reveal>
-            <div className="story-content">
-              <span className="story-eyebrow">Our Story</span>
-              <h2 className="story-h2">Born from a<br/>300-Year-Old Craft</h2>
-              <p className="story-p">
-                Deep in Karimnagar, Telangana, the ancient art of lacquer painting has been
-                lovingly passed down through generations — a tradition older than 300 years, still
-                alive in the hands of 48 dedicated artisan families today.
-              </p>
-              <p className="story-p">
-                Every pot, clock, and painting carries the soul of Telugu culture. GI-certified and
-                handcrafted, each piece is a conversation between centuries of skill and your
-                home. Telugu Seemalo exists to carry this extraordinary heritage to the world.
-              </p>
-              <button className="story-cta" onClick={() => setPage("about")}>
-                Discover Our Full Story →
-              </button>
-            </div>
-          </Reveal>
+      {/* OUR STORY — sticky scroll */}
+      <StoryScroll setPage={setPage} />
 
-          <Reveal delay={180}>
-            <div className="story-visual">
-              <div className="story-card story-card-main">
-                <div className="story-tel-script">కళాత్మక</div>
-                <div className="story-art-icons">
-                  <span>🏺</span><span>🎨</span><span>🪔</span>
-                </div>
-                <div className="story-since">Since 1700s · Karimnagar</div>
-              </div>
-              <div className="story-pill story-pill-gi">🏅 GI-Tagged</div>
-              <div className="story-pill story-pill-craft">48 Artisan Families</div>
-              <div className="story-ring story-ring-1" />
-              <div className="story-ring story-ring-2" />
-            </div>
-          </Reveal>
-        </div>
-      </div>
-
-      <Wave from="#18100A" to="#FDF8F3" />
+      <Wave from="#0E0A06" to="#FDF8F3" />
 
       {/* FEATURED */}
       <div className="sec">

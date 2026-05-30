@@ -12,9 +12,9 @@ const S = `
   --sh:0 4px 20px rgba(100,60,20,.13);
   --sh2:0 8px 40px rgba(100,60,20,.22);
 }
-html,body{height:100%;overflow-y:auto !important;}
+html,body{min-height:100%;}
 body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
-.app{min-height:100vh;overflow-y:auto;}
+.app{min-height:100vh;}
 
 /* NAV */
 .nav{background:var(--dk);position:sticky;top:0;z-index:1000;box-shadow:0 2px 20px rgba(0,0,0,.35);}
@@ -80,6 +80,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .tw-line{font-size:.95rem;color:rgba(191,176,154,.88);font-style:italic;letter-spacing:.02em;}
 .tw-cursor{display:inline-block;width:2px;height:.88em;background:#E8620A;margin-left:3px;vertical-align:middle;animation:tw-blink .72s step-end infinite;}
 @keyframes tw-blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes storyFadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── Mandala spin ── */
 @keyframes spin-cw{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
