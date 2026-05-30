@@ -115,26 +115,23 @@ function StoryScroll({ setPage }) {
               top: "2%", left: "50%", transform: "translateX(-50%) rotate(-8deg)",
               opacity: .13, userSelect: "none",
             }}>{c.emoji}</div>
+            {/* telugu watermark — inside panel so it fades with chapter */}
+            <div style={{
+              position: "absolute", top: "11%", right: "5%",
+              fontFamily: "'Noto Serif Telugu','Mandali',serif",
+              fontSize: "clamp(2rem,11vw,3.4rem)", fontWeight: 700,
+              color: c.accent, opacity: .07, lineHeight: 1, userSelect: "none",
+            }}>{c.telugu}</div>
+            {/* chapter number watermark */}
+            <div style={{
+              position: "absolute", top: "11%", left: "5%",
+              fontFamily: "'Cormorant Garamond',serif",
+              fontSize: "clamp(3.5rem,20vw,6rem)", fontWeight: 700,
+              color: c.accent, opacity: .07, lineHeight: 1,
+              userSelect: "none", letterSpacing: "-0.04em",
+            }}>{String(i + 1).padStart(2, "0")}</div>
           </div>
         ))}
-
-        {/* telugu + chapter number watermarks */}
-        <div style={{
-          position: "absolute", top: "12%", right: "5%", zIndex: 3,
-          fontFamily: "'Noto Serif Telugu','Mandali',serif",
-          fontSize: "clamp(2rem,11vw,3.4rem)", fontWeight: 700,
-          color: ch.accent, opacity: .2, lineHeight: 1,
-          userSelect: "none", transition: "color .8s ease",
-        }}>{ch.telugu}</div>
-
-        <div style={{
-          position: "absolute", top: "12%", left: "5%", zIndex: 3,
-          fontFamily: "'Cormorant Garamond',serif",
-          fontSize: "clamp(3.5rem,20vw,6rem)", fontWeight: 700,
-          color: ch.accent, opacity: .1, lineHeight: 1,
-          userSelect: "none", letterSpacing: "-0.04em",
-          transition: "color .8s ease",
-        }}>{String(chapter + 1).padStart(2, "0")}</div>
 
         {/* centred emoji — lower and larger */}
         <div style={{
