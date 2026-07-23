@@ -135,7 +135,6 @@ export default function AdminReviews() {
   const [prodLoading, setProdLoading] = useState(false);
 
   // ── Upload state ──
-  const [newImgUploading, setNewImgUploading] = useState(false);
   const [newVidUploading, setNewVidUploading] = useState(false);
   const [editUploading,   setEditUploading]   = useState(false);
 
@@ -233,7 +232,7 @@ export default function AdminReviews() {
 
   if (loading) return <div className="admin-loading">Loading reviews…</div>;
 
-  const newProdUploading = newImgUploading || newVidUploading;
+  const newProdUploading = newVidUploading;
 
   return (
     <div className="admin-content">
@@ -444,9 +443,8 @@ export default function AdminReviews() {
                     images={newProd.images || []}
                     onAdd={handleNewImages}
                     onRemove={i => setNewProd(s => ({ ...s, images: s.images.filter((_,idx) => idx !== i) }))}
-                    uploading={newImgUploading}
+                    uploading={false}
                   />
-                  {newImgUploading && <div style={{ fontSize:".8rem", color:"#E8620A", marginBottom:8, fontWeight:600 }}>Uploading images…</div>}
 
                   {/* Video upload */}
                   <ReviewVideoUpload

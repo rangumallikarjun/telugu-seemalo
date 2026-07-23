@@ -668,7 +668,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                         : <span style={{fontWeight:400,color:"var(--mt)",fontSize:".82rem"}}>₹0 balance</span>}
                     </div>
                     <button type="button" onClick={()=>setTopUpOpen(v=>!v)}
-                      style={{background:"none",border:"1px solid var(--bd)",borderRadius:8,padding:"4px 12px",
+                      style={{border:"1px solid var(--bd)",borderRadius:8,padding:"4px 12px",
                         cursor:"pointer",fontSize:".78rem",color:"#1565C0",fontWeight:600,fontFamily:"DM Sans,sans-serif",
                         borderColor:"#BFDBFE",background:"#EFF6FF",transition:"all .15s"}}
                       onMouseEnter={e=>{e.currentTarget.style.background="#DBEAFE";e.currentTarget.style.borderColor="#93C5FD";}}

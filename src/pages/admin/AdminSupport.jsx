@@ -195,12 +195,15 @@ export default function AdminSupport() {
     if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
   }, [sel?.id, sel?.replies?.length]);
 
+  // Deliberately keyed on selId only — re-seeding whenever sel.adminNotes changes
+  // would overwrite the admin's in-progress edits as the ticket doc updates live.
   useEffect(() => {
     setNotes(sel?.adminNotes || "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selId]);
 
   useEffect(() => {
-    if (sel && !sel.read) updateTicket(sel.id, { read: true });
+    if (sel?.id && !sel.read) updateTicket(sel.id, { read: true });
   }, [sel?.id, sel?.read]);
 
   const open = (t) => { setSelId(t.id); setReply(""); setNotes(t.adminNotes || ""); };

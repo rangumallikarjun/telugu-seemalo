@@ -442,7 +442,7 @@ function ReviewsTab({ productId, rating, reviewCount, user }) {
 }
 
 function parseRange(str = "") {
-  const parts = String(str).split(/[–\-]/);
+  const parts = String(str).split(/[–-]/);
   return [parseInt(parts[0]) || 5, parseInt(parts[parts.length - 1]) || 7];
 }
 
@@ -544,6 +544,9 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
     setTab("desc");
     setSgOpen(false);
     trackView(p.id);
+  // Deliberately keyed on p.id only — re-running on every p.sizes/p.colors reference
+  // change would reset the selected size/colour while browsing the same product.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.id]);
 
   useEffect(() => {

@@ -139,7 +139,7 @@ function StoryScroll({ setPage, chapters }) {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
     };
-  }, []);
+  }, [chapters.length]);
 
   const handleTiltMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();

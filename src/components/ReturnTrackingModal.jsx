@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getReturnByOrderDocId } from "../firebase/returnService";
-import { fmt, NoImageIcon } from "../utils/helpers";
+import { NoImageIcon } from "../utils/helpers";
 
 const STEP_COLOR = {
   done:     { bg:"#E8620A", border:"#E8620A", text:"#fff" },

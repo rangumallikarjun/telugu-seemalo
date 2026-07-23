@@ -562,7 +562,6 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
   const [walletTxnPage,   setWalletTxnPage]   = useState(0);
   const [rechargeOpen, setRechargeOpen]   = useState(false);
   const [rechargeAmt, setRechargeAmt]     = useState("");
-  const [rechargePaying, setRechargePaying] = useState(false);
   const [rzpOpen, setRzpOpen] = useState(false);
   const [notifs, setNotifs]           = useState([]);
   const [notifFilter, setNotifFilter] = useState("all");
@@ -580,7 +579,6 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
   const [invoice, setInvoice]   = useState(null);
   const [returnOrder, setReturnOrder]   = useState(null);
   const [trackReturn, setTrackReturn]   = useState(null);
-  const [pwOpen, setPwOpen]       = useState(false);
   const [pw, setPw]               = useState({current:"", next:"", confirm:""});
   const [pwError, setPwError]         = useState("");
   const [pwSuccess, setPwSuccess]     = useState("");
@@ -605,7 +603,7 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
   const [roomDesignsLoading, setRoomDesignsLoading] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.uid) return;
     const unsub = subscribeOrdersByUser(user.uid, user.email, o => {
       setOrders(o);
       setLoading(false);
@@ -752,7 +750,7 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
     setPwPendingOtp("");
     setPwSuccess("Password changed successfully! A confirmation has been sent to your email.");
     setPw({current:"", next:"", confirm:""});
-    setTimeout(() => { setPwOpen(false); setPwSuccess(""); }, 3000);
+    setTimeout(() => setPwSuccess(""), 3000);
   };
 
   const handlePwOtpResend = async () => {
@@ -1967,14 +1965,9 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
           purpose="Wallet Recharge"
           onSuccess={async () => {
             setRzpOpen(false);
-            setRechargePaying(true);
-            try {
-              await rechargeWallet(user.uid, parseFloat(rechargeAmt));
-              setRechargeAmt("");
-              setRechargeOpen(false);
-            } finally {
-              setRechargePaying(false);
-            }
+            await rechargeWallet(user.uid, parseFloat(rechargeAmt));
+            setRechargeAmt("");
+            setRechargeOpen(false);
           }}
           onClose={() => setRzpOpen(false)}
         />

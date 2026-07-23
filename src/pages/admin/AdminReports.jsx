@@ -15,8 +15,6 @@ const downloadCSV = (rows, filename) => {
   URL.revokeObjectURL(url);
 };
 
-const fmtRaw = n => n.toLocaleString("en-IN");
-
 const periodKey = (date, by) => {
   if (by === "day")   return date.toLocaleDateString("en-IN", {day:"2-digit",month:"short",year:"numeric"});
   if (by === "month") return date.toLocaleDateString("en-IN", {month:"long",year:"numeric"});

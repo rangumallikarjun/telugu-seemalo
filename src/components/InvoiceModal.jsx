@@ -60,8 +60,6 @@ export default function InvoiceModal({ order, onClose }) {
     ? order.createdAt.toDate().toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" })
     : new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" });
 
-  const statusClass = { Processing:"badge-processing", Shipped:"badge-shipped", Delivered:"badge-delivered", Cancelled:"badge-cancelled" };
-
   return (
     <div
       onClick={e => e.target === e.currentTarget && onClose()}
