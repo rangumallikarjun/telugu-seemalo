@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { getProducts, addProduct, updateProduct, deleteProduct } from "../../firebase/productService";
 import { uploadProductImage, uploadProductVideo, deleteFileByUrl } from "../../firebase/storageService";
 import { CATS } from "../../data/products";
-import { fmt } from "../../utils/helpers";
+import { fmt, NoImageIcon } from "../../utils/helpers";
+import { useCropUpload } from "../../hooks/useCropUpload";
+import ImageCropModal from "../../components/ImageCropModal";
 
 const EMPTY = {
   id: Date.now(), name: "", category: "Pots", price: "", originalPrice: "",
-  emoji: "🏺", description: "", stock: "", isNew: false,
+  description: "", stock: "", isNew: false, featured: false, comingSoon: false,
   sizes: [], colors: [], features: [], specs: [], sg: [],
   images: [], video: "",
 };
@@ -103,30 +105,14 @@ function SpecsList({ specs, onChange }) {
 
 // ── Media uploader (photos) ───────────────────────────────────────────────────
 function MediaUploader({ images, productId, onChange }) {
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress]   = useState(0);
   const inputRef = useRef();
+  const crop = useCropUpload((file) => uploadProductImage(file, productId), 1);
 
-  const handleFiles = async (e) => {
+  const handleFiles = (e) => {
     const files = Array.from(e.target.files);
+    if (inputRef.current) inputRef.current.value = "";
     if (!files.length) return;
-    setUploading(true);
-    setProgress(0);
-    try {
-      const total = files.length;
-      let done = 0;
-      const urls = await Promise.all(
-        files.map(f =>
-          uploadProductImage(f, productId, p => setProgress(Math.round((done * 100 + p) / total)))
-            .then(url => { done++; return url; })
-        )
-      );
-      onChange([...images, ...urls]);
-    } finally {
-      setUploading(false);
-      setProgress(0);
-      if (inputRef.current) inputRef.current.value = "";
-    }
+    crop.open(files, (urls) => { if (urls.length) onChange([...images, ...urls]); });
   };
 
   const remove = async (url, i) => {
@@ -160,24 +146,13 @@ function MediaUploader({ images, productId, onChange }) {
         </div>
       )}
 
-      <div className="upload-zone" style={{pointerEvents: uploading ? "none" : "auto"}}>
+      <div className="upload-zone">
         <input ref={inputRef} type="file" accept="image/*" multiple onChange={handleFiles}/>
-        {uploading ? (
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-            <Spinner size="md"/>
-            <span style={{fontSize:".82rem",color:"#6B4C38"}}>Uploading… {progress}%</span>
-            <div className="upload-prog" style={{width:"100%"}}>
-              <div className="upload-prog-bar" style={{width:`${progress}%`}}/>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div style={{fontSize:"1.8rem",marginBottom:6}}>🖼️</div>
-            <div style={{fontSize:".85rem",fontWeight:600,color:"#2D1E12"}}>Click or drag photos here</div>
-            <div style={{fontSize:".75rem",color:"#6B4C38",marginTop:3}}>PNG, JPG, WebP · multiple allowed</div>
-          </>
-        )}
+        <div style={{fontSize:"1.8rem",marginBottom:6}}>🖼️</div>
+        <div style={{fontSize:".85rem",fontWeight:600,color:"#2D1E12"}}>Click or drag photos here</div>
+        <div style={{fontSize:".75rem",color:"#6B4C38",marginTop:3}}>PNG, JPG, WebP · multiple allowed · you'll crop each before upload</div>
       </div>
+      {crop.cropProps && <ImageCropModal {...crop.cropProps} />}
     </div>
   );
 }
@@ -265,8 +240,8 @@ function ProductModal({ product, onSave, onClose }) {
   };
 
   return (
-    <div className="admin-modal-bg" onClick={onClose}>
-      <div className="admin-modal" style={{maxWidth:640}} onClick={e => e.stopPropagation()}>
+    <div className="admin-modal-bg">
+      <div className="admin-modal" style={{maxWidth:640}}>
         <h2>{product ? "Edit Product" : "Add Product"}</h2>
 
         <div className="admin-form-grid">
@@ -289,10 +264,6 @@ function ProductModal({ product, onSave, onClose }) {
             <input type="number" value={form.originalPrice} onChange={e => set("originalPrice", e.target.value)} placeholder="1800"/>
           </div>
           <div className="admin-inp-grp">
-            <label>Emoji (fallback)</label>
-            <input value={form.emoji} onChange={e => set("emoji", e.target.value)} placeholder="🏺"/>
-          </div>
-          <div className="admin-inp-grp">
             <label>Stock Quantity</label>
             <input type="number" value={form.stock} onChange={e => set("stock", e.target.value)} placeholder="0"/>
           </div>
@@ -304,8 +275,25 @@ function ProductModal({ product, onSave, onClose }) {
         </div>
 
         <div className="admin-inp-grp" style={{display:"flex",alignItems:"center",gap:10}}>
-          <input type="checkbox" id="isnew" checked={!!form.isNew} onChange={e => set("isNew", e.target.checked)}/>
+          <input type="checkbox" id="isnew" checked={!!form.isNew} onChange={e => set("isNew", e.target.checked)}
+            style={{width:16,height:16,flexShrink:0,accentColor:"#E8620A"}}/>
           <label htmlFor="isnew" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>Mark as New Arrival</label>
+        </div>
+
+        <div className="admin-inp-grp" style={{display:"flex",alignItems:"center",gap:10}}>
+          <input type="checkbox" id="featured" checked={!!form.featured} onChange={e => set("featured", e.target.checked)}
+            style={{width:16,height:16,flexShrink:0,accentColor:"#E8620A"}}/>
+          <label htmlFor="featured" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>
+            Show in "Featured Products" on homepage
+          </label>
+        </div>
+
+        <div className="admin-inp-grp" style={{display:"flex",alignItems:"center",gap:10}}>
+          <input type="checkbox" id="comingsoon" checked={!!form.comingSoon} onChange={e => set("comingSoon", e.target.checked)}
+            style={{width:16,height:16,flexShrink:0,accentColor:"#E8620A"}}/>
+          <label htmlFor="comingsoon" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>
+            Mark as "Coming Soon" (hides Add to Cart, shows badge)
+          </label>
         </div>
 
         <MediaUploader images={form.images || []} productId={form.id} onChange={v => set("images", v)}/>
@@ -374,6 +362,14 @@ function StockCell({ docId, stock, onUpdate }) {
   );
 }
 
+function ProductThumb({ p }) {
+  const [imgError, setImgError] = useState(false);
+  return p.images?.[0] && !imgError
+    ? <img src={p.images[0]} alt="" onError={() => setImgError(true)}
+        style={{width:44,height:44,objectFit:"cover",borderRadius:8}}/>
+    : <div style={{width:44,height:44,borderRadius:8,background:"#F4EDE5",display:"flex",alignItems:"center",justifyContent:"center"}}><NoImageIcon/></div>;
+}
+
 // ── Main AdminProducts ────────────────────────────────────────────────────────
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -386,7 +382,9 @@ export default function AdminProducts() {
   useEffect(() => { load(); }, []);
 
   const handleSave = async (form) => {
-    if (modal === "add") {
+    const isAdd = modal === "add";
+    if (!window.confirm(isAdd ? "Add this new product to the store?" : "Save changes to this product?")) return;
+    if (isAdd) {
       await addProduct(form);
     } else {
       const { docId, ...data } = form;
@@ -440,13 +438,13 @@ export default function AdminProducts() {
               {filtered.map(p => (
                 <tr key={p.docId}>
                   <td className="emoji-cell">
-                    {p.images?.[0]
-                      ? <img src={p.images[0]} alt="" style={{width:44,height:44,objectFit:"cover",borderRadius:8}}/>
-                      : p.emoji}
+                    <ProductThumb p={p}/>
                   </td>
                   <td>
                     <strong>{p.name}</strong>
                     {p.isNew && <span className="badge badge-shipped" style={{marginLeft:8}}>NEW</span>}
+                    {p.featured && <span className="badge badge-delivered" style={{marginLeft:6}}>★ FEATURED</span>}
+                    {p.comingSoon && <span className="badge badge-processing" style={{marginLeft:6}}>⏳ COMING SOON</span>}
                     {p.video && <span style={{marginLeft:6,fontSize:".7rem",color:"#6B4C38"}}>🎬</span>}
                     {p.images?.length > 0 && <span style={{marginLeft:4,fontSize:".7rem",color:"#6B4C38"}}>🖼️×{p.images.length}</span>}
                   </td>

@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   useEffect(() => { load(); }, []);
 
   const handleSeed = async () => {
+    if (!window.confirm("Seed the database with 12 starter products?")) return;
     setSeeding(true);
     const result = await seedProducts();
     if (result.alreadySeeded) setSeedMsg(`Already seeded (${result.count} products in database).`);

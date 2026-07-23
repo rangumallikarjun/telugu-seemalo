@@ -57,6 +57,7 @@ export default function AdminPayments() {
   const setRzp = (k, v) => setSettings(s => ({ ...s, razorpay: { ...s.razorpay, [k]: v } }));
 
   const handleSave = async () => {
+    if (!window.confirm("Save changes to payment settings? This will affect live checkout.")) return;
     await setDoc(doc(db, "settings", "payments"), settings);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -169,6 +170,7 @@ export default function AdminPayments() {
 
       {/* Razorpay tab */}
       {activeTab === "razorpay" && (
+        <>
         <div className="admin-card" style={{maxWidth:640}}>
           <div className="admin-card-hd">
             <h3>💳 Razorpay</h3>
@@ -250,6 +252,36 @@ export default function AdminPayments() {
           </div>
           <SaveRow onSave={handleSave} saved={saved}/>
         </div>
+
+        <div className="admin-card" style={{maxWidth:640,marginTop:20}}>
+          <div className="admin-card-hd">
+            <h3>🔑 Razorpay Test Cards</h3>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Test mode only — for verifying checkout</span>
+          </div>
+          <div style={{padding:"8px 0 20px",display:"flex",flexDirection:"column",gap:10}}>
+            {[
+              { type: "Visa (Success)",       num: "4111 1111 1111 1111", exp: "12/26", cvv: "123", otp: "1234" },
+              { type: "Mastercard (Success)", num: "5267 3181 8797 5449", exp: "12/26", cvv: "123", otp: "1234" },
+              { type: "Visa (Failure)",       num: "4000 0000 0000 0002", exp: "12/26", cvv: "123", otp: "1234" },
+              { type: "Rupay (Success)",      num: "6073 8490 7868 5709", exp: "12/26", cvv: "123", otp: "1234" },
+            ].map(card => (
+              <div key={card.num} style={{background:"#F8F4F0",borderRadius:9,padding:"10px 14px",border:"1px solid #E8D5C0"}}>
+                <div style={{color:"#18100A",fontSize:".82rem",fontWeight:700,marginBottom:6}}>{card.type}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:"4px 18px",fontSize:".8rem"}}>
+                  <TestField label="Card" value={card.num} />
+                  <TestField label="Expiry" value={card.exp} />
+                  <TestField label="CVV" value={card.cvv} />
+                  <TestField label="OTP" value={card.otp} />
+                </div>
+              </div>
+            ))}
+            <div style={{color:"#6B4C38",fontSize:".78rem",paddingTop:2}}>
+              UPI test ID: <span style={{color:"#E8620A",fontWeight:700}}>success@razorpay</span>
+              &nbsp;·&nbsp;Failure UPI: <span style={{color:"#C0392B",fontWeight:700}}>failure@razorpay</span>
+            </div>
+          </div>
+        </div>
+        </>
       )}
 
       {/* Transactions tab */}
@@ -415,6 +447,26 @@ function SaveRow({ onSave, saved }) {
     <div style={{display:"flex",gap:12,alignItems:"center",marginTop:8}}>
       <button className="admin-btn admin-btn-primary" onClick={onSave}>Save Settings</button>
       {saved && <span style={{color:"#2D7D46",fontSize:".88rem",fontWeight:600}}>✓ Saved successfully!</span>}
+    </div>
+  );
+}
+
+function TestField({ label, value }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard?.writeText(value.replace(/\s/g, ""));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
+  };
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:4}}>
+      <span style={{color:"#6B4C38"}}>{label}:</span>
+      <span style={{color:"#B7770D",fontFamily:"monospace",letterSpacing:".05em",fontWeight:700}}>{value}</span>
+      <button type="button" onClick={copy}
+        style={{background:"none",border:"none",cursor:"pointer",color: copied ? "#2D7D46" : "#6B4C38",fontSize:".8rem",padding:"0 2px"}}
+        title="Copy">
+        {copied ? "✓" : "⧉"}
+      </button>
     </div>
   );
 }

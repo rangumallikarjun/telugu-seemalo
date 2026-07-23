@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { fmt } from "../utils/helpers";
+import { fmt, NoImageIcon } from "../utils/helpers";
 
 export default function CartDrawer({cart, open, onClose, onQty, onRemove, setPage}) {
   const [freeAbove, setFreeAbove] = useState(null);
@@ -50,7 +50,7 @@ export default function CartDrawer({cart, open, onClose, onQty, onRemove, setPag
                   <div className="ci-img">
                     {item.images?.[0]
                       ? <img src={item.images[0]} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                      : item.emoji}
+                      : <NoImageIcon/>}
                   </div>
                   <div className="ci-info">
                     <div className="ci-name">{item.name}</div>

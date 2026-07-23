@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { fmt, disc, Stars } from "../utils/helpers";
+import { fmt, disc, Stars, NoImageIcon } from "../utils/helpers";
 import { isWishlisted, toggleWishlist } from "../utils/wishlist";
 
 export default function ProductCard({ p, onOpen, onAdd, delay = 0 }) {
@@ -8,6 +8,7 @@ export default function ProductCard({ p, onOpen, onAdd, delay = 0 }) {
   const tiltRaf  = useRef(null);
   const [vis, setVis]     = useState(false);
   const [loved, setLoved] = useState(() => isWishlisted(p.id));
+  const [imgError, setImgError] = useState(false);
 
   // Scroll reveal
   useEffect(() => {
@@ -59,12 +60,14 @@ export default function ProductCard({ p, onOpen, onAdd, delay = 0 }) {
       <div ref={tiltRef} style={{ willChange: "transform", transformStyle: "preserve-3d" }}
         onMouseMove={handleTilt} onMouseLeave={resetTilt}>
         <div className={`pcard ${p.stock === 0 ? "sold-out" : ""}`} onClick={() => onOpen(p)}>
-          {p.isNew && <div className="new-badge">NEW</div>}
+          {p.comingSoon ? <div className="new-badge" style={{background:"#B7770D"}}>COMING SOON</div>
+            : p.isNew && <div className="new-badge">NEW</div>}
 
           <div className="pcard-img">
-            {p.images?.[0]
-              ? <img src={p.images[0]} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : p.emoji}
+            {p.images?.[0] && !imgError
+              ? <img src={p.images[0]} alt={p.name} onError={() => setImgError(true)}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <NoImageIcon/>}
 
             <button className={`pcard-heart${loved ? " act" : ""}`} onClick={handleHeart}
               title={loved ? "Remove from wishlist" : "Add to wishlist"}>
@@ -79,14 +82,17 @@ export default function ProductCard({ p, onOpen, onAdd, delay = 0 }) {
           <div className="pcard-body">
             <div className="pcard-cat">{p.category}</div>
             <div className="pcard-name">{p.name}</div>
-            <div className="pcard-stars"><Stars r={p.rating} /><span className="rv">({p.reviews})</span></div>
+            {(p.rating > 0 || p.reviews > 0) && (
+              <div className="pcard-stars"><Stars r={p.rating || 0} /><span className="rv">({p.reviews || 0})</span></div>
+            )}
             <div className="pcard-price">
               <span className="price">{fmt(p.price)}</span>
               <span className="oprice">{fmt(p.originalPrice)}</span>
               <span className="disc">{disc(p.price, p.originalPrice)}% off</span>
             </div>
-            <button className="pcard-add" onClick={e => { e.stopPropagation(); onAdd(p); }}>
-              {p.stock === 0 ? "Sold Out" : "Add to Cart"}
+            <button className="pcard-add" disabled={p.comingSoon || p.stock === 0}
+              onClick={e => { e.stopPropagation(); if (!p.comingSoon) onAdd(p); }}>
+              {p.comingSoon ? "Coming Soon" : p.stock === 0 ? "Sold Out" : "Add to Cart"}
             </button>
           </div>
         </div>

@@ -102,7 +102,7 @@ export default function InvoiceModal({ order, onClose }) {
               <div style={{fontFamily:"Georgia,serif",fontSize:"1.55rem",fontWeight:700,color:"#E8620A"}}>Telugu Seemalo</div>
               <div style={{fontSize:".8rem",color:"#6B4C38",marginTop:4}}>📍 Karimnagar, Telangana, India</div>
               <div style={{fontSize:".78rem",color:"#6B4C38"}}>📧 hello@teluguseeamalo.in &nbsp;|&nbsp; 📞 +91 9876 543 210</div>
-              <div style={{fontSize:".72rem",color:"#C9901A",marginTop:2}}>🏅 GI-Tagged Authentic Cheriyal Craft</div>
+              <div style={{fontSize:".72rem",color:"#C9901A",marginTop:2}}>🏅 Authentic Cheriyal Craft</div>
             </div>
             <div style={{textAlign:"right"}}>
               <div style={{fontSize:"1.2rem",fontWeight:700,color:"#18100A",textTransform:"uppercase",letterSpacing:".1em"}}>Invoice</div>
@@ -164,7 +164,6 @@ export default function InvoiceModal({ order, onClose }) {
                 <tr key={i} style={{borderBottom:"1px solid #F0E8DF",background: i%2===1 ? "#FDFAF7" : "#fff"}}>
                   <td style={{padding:"11px 12px",fontSize:".83rem",color:"#9B8472"}}>{i+1}</td>
                   <td style={{padding:"11px 12px"}}>
-                    <span style={{marginRight:6}}>{item.emoji}</span>
                     <strong style={{fontSize:".88rem"}}>{item.name}</strong>
                   </td>
                   <td style={{padding:"11px 12px",fontSize:".82rem",color:"#6B4C38"}}>
@@ -210,8 +209,8 @@ export default function InvoiceModal({ order, onClose }) {
             </div>
             <div style={{textAlign:"right",fontSize:".74rem",color:"#C9901A"}}>
               <div style={{fontSize:"1.5rem",marginBottom:4}}>🏅</div>
-              GI-Tagged Authentic Craft<br/>
-              Government of India Certified
+              Authentic Handcrafted Craft<br/>
+              Made in Karimnagar, Telangana
             </div>
           </div>
         </div>

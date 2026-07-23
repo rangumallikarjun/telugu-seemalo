@@ -56,7 +56,7 @@ export default function AdminCustomers() {
                   </td>
                   <td>
                     <select className="status-select" value={u.role || "customer"}
-                      onChange={e => handleRole(u.uid, e.target.value)}>
+                      onChange={e => { if (window.confirm(`Change ${u.name || u.email}'s role to "${e.target.value}"?`)) handleRole(u.uid, e.target.value); }}>
                       <option value="customer">Customer</option>
                       <option value="admin">Admin</option>
                     </select>

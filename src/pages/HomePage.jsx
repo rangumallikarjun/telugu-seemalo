@@ -4,9 +4,66 @@ import { db } from "../firebase/config";
 import { getProducts } from "../firebase/productService";
 import ProductCard from "../components/ProductCard";
 import MarqueeStrip from "../components/MarqueeStrip";
+import { cldOptimize } from "../utils/helpers";
+
+export const HERO_PAGE_OPTIONS = [
+  { value: "home",    label: "Home" },
+  { value: "shop",    label: "Shop" },
+  { value: "about",   label: "Our Story" },
+  { value: "room",    label: "Room Builder" },
+  { value: "contact", label: "Contact" },
+  { value: "track",   label: "Track Order" },
+];
+
+export const DEFAULT_HERO_SLIDES = [
+  {
+    id: "default-1",
+    image: "",
+    imageTablet: "",
+    imageMobile: "",
+    telugu: "హస్తకళ",
+    headingLine1: "Authentic",
+    headingHighlight: "Handcrafted",
+    headingLine2: "Lacquer Art",
+    description: "Authentic handcrafted treasures from the heart of Karimnagar, Telangana — bringing centuries of artisan tradition to your home.",
+    primaryBtnLabel: "Shop Now",
+    primaryBtnPage: "shop",
+    secondaryBtnLabel: "Our Story",
+    secondaryBtnPage: "about",
+    badgeText: "🏅 Authentic Handcrafted Heritage Craft",
+  },
+];
+
+export const DEFAULT_TRUST_ITEMS = [
+  { icon: "🚚", label: "Free Delivery above ₹999" },
+  { icon: "🏅", label: "Authentic Handcrafted Art" },
+  { icon: "↩",  label: "Easy 7-day Returns" },
+  { icon: "🎁", label: "Gift Wrapping Available" },
+];
+
+export const DEFAULT_STATS_ITEMS = [
+  { val: 200,  suffix: "+", label: "Handcrafted Products" },
+  { val: 5000, suffix: "+", label: "Happy Customers" },
+  { val: 48,   suffix: "",  label: "Artisan Families" },
+  { val: 300,  suffix: "+", label: "Years of Heritage" },
+];
+
+export const DEFAULT_CATEGORY_ITEMS = [
+  { icon: "🏺", label: "Pots" },
+  { icon: "🕰️", label: "Clocks" },
+  { icon: "🪟", label: "Curtains" },
+  { icon: "🛏️", label: "Bed Sheets" },
+  { icon: "🎨", label: "Home Decor" },
+];
+
+export const DEFAULT_SOCIAL_LINKS = [
+  { icon: "📷", label: "Instagram", url: "" },
+  { icon: "👍", label: "Facebook",  url: "" },
+  { icon: "🐦", label: "Twitter",   url: "" },
+];
 
 // ── Our Story chapters ────────────────────────────────────────────────────────
-const STORY = [
+export const DEFAULT_STORY_CHAPTERS = [
   {
     eyebrow: "The Origin · 1700s",
     title:   ["Born from the", "Banks of Manair"],
@@ -30,14 +87,14 @@ const STORY = [
     stat:    { value: "48", label: "Artisan Families" },
   },
   {
-    eyebrow: "The Craft · GI Certified",
+    eyebrow: "The Craft · Handmade Since 2020",
     title:   ["Every Stroke,", "A Story"],
     body:    "Natural lacquer, hand-turned wood, tools passed through generations. Each piece takes 3–7 days to complete entirely by hand. No machines. No shortcuts. Pure craft.",
     bg:      "linear-gradient(160deg, #080A20 0%, #1A1A60 55%, #080A20 100%)",
     accent:  "#7AABFF",
     emoji:   "🎨",
     telugu:  "చేతిపని",
-    tag:     "GI-Tagged · Certified",
+    tag:     "Authentic · Handcrafted",
     stat:    { value: "3–7", label: "Days Per Piece" },
   },
   {
@@ -54,7 +111,7 @@ const STORY = [
 ];
 
 // ── Apple-style sticky scroll story ──────────────────────────────────────────
-function StoryScroll({ setPage }) {
+function StoryScroll({ setPage, chapters }) {
   const sectionRef = useRef(null);
   const [chapter, setChapter] = useState(0);
   const [tilt, setTilt]       = useState({ x: 0, y: 0 });
@@ -72,7 +129,7 @@ function StoryScroll({ setPage }) {
       const total    = el.offsetHeight - visibleH;
       if (total <= 0) return;
       const p = Math.max(0, Math.min(1 - 1e-9, scrolled / total));
-      setChapter(Math.floor(p * STORY.length));
+      setChapter(Math.floor(p * chapters.length));
     };
     const onResize = () => { setMobile(window.innerWidth < 768); onScroll(); };
     window.addEventListener("scroll", onScroll,  { passive: true });
@@ -92,29 +149,31 @@ function StoryScroll({ setPage }) {
   };
   const resetTilt = () => setTilt({ x: 0, y: 0 });
 
-  const ch = STORY[chapter];
-  const timelinePct = `${(chapter / (STORY.length - 1)) * 100}%`;
+  const ch = chapters[chapter];
+  const timelinePct = `${(chapter / (chapters.length - 1)) * 100}%`;
 
 
   /* ════════════════════ MOBILE ════════════════════ */
   if (mobile) return (
-    <div ref={sectionRef} style={{ height: `calc(${STORY.length} * 100vh)`, position: "relative", background: "#0E0A06" }}>
+    <div ref={sectionRef} style={{ height: `calc(${chapters.length} * 100vh)`, position: "relative", background: "#0E0A06" }}>
       <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
 
         {/* full-bleed chapter gradients */}
-        {STORY.map((c, i) => (
+        {chapters.map((c, i) => (
           <div key={i} style={{
             position: "absolute", inset: 0, background: c.bg,
             opacity: i === chapter ? 1 : 0,
             transform: `scale(${i === chapter ? 1 : 1.04})`,
             transition: "opacity .9s ease, transform 1.4s ease",
           }}>
-            {/* oversized bg emoji */}
-            <div style={{
-              position: "absolute", fontSize: "72vw", lineHeight: 1,
-              top: "2%", left: "50%", transform: "translateX(-50%) rotate(-8deg)",
-              opacity: .13, userSelect: "none",
-            }}>{c.emoji}</div>
+            {/* oversized bg emoji — only when this chapter has no photo */}
+            {!c.image && (
+              <div style={{
+                position: "absolute", fontSize: "72vw", lineHeight: 1,
+                top: "2%", left: "50%", transform: "translateX(-50%) rotate(-8deg)",
+                opacity: .13, userSelect: "none",
+              }}>{c.emoji}</div>
+            )}
             {/* telugu watermark — inside panel so it fades with chapter */}
             <div style={{
               position: "absolute", top: "11%", right: "5%",
@@ -133,27 +192,39 @@ function StoryScroll({ setPage }) {
           </div>
         ))}
 
-        {/* centred emoji — lower and larger */}
+        {/* centred emoji or photo — lower and larger */}
         <div style={{
           position: "absolute", top: "22%", left: "50%",
           transform: "translateX(-50%)", zIndex: 4, textAlign: "center",
         }}>
-          <div key={`em-${chapter}`} style={{
-            fontSize: "clamp(5.5rem,24vw,8rem)", lineHeight: 1,
-            filter: `drop-shadow(0 0 32px ${ch.accent}70)`,
-            animation: "storyFadeUp .38s ease both",
-            display: "block", position: "relative", zIndex: 2,
-          }}>{ch.emoji}</div>
-          {[86, 136, 192].map((sz, ri) => (
-            <div key={ri} style={{
-              position: "absolute", top: "50%", left: "50%",
-              width: sz, height: sz, borderRadius: "50%",
-              border: `1px solid ${ch.accent}${["44","24","10"][ri]}`,
-              transform: "translate(-50%,-50%)",
-              transition: "border-color .8s ease",
-              pointerEvents: "none",
+          {ch.image ? (
+            <img key={`em-${chapter}`} src={ch.image} alt="" style={{
+              width: "72vw", maxWidth: 340, height: "42vw", maxHeight: 200, objectFit: "cover",
+              borderRadius: 18, border: `1px solid ${ch.accent}40`,
+              boxShadow: "0 16px 40px rgba(0,0,0,.4)",
+              animation: "storyFadeUp .38s ease both",
+              display: "block", position: "relative", zIndex: 2, margin: "0 auto",
             }}/>
-          ))}
+          ) : (
+            <>
+              <div key={`em-${chapter}`} style={{
+                fontSize: "clamp(5.5rem,24vw,8rem)", lineHeight: 1,
+                filter: `drop-shadow(0 0 32px ${ch.accent}70)`,
+                animation: "storyFadeUp .38s ease both",
+                display: "block", position: "relative", zIndex: 2,
+              }}>{ch.emoji}</div>
+              {[86, 136, 192].map((sz, ri) => (
+                <div key={ri} style={{
+                  position: "absolute", top: "50%", left: "50%",
+                  width: sz, height: sz, borderRadius: "50%",
+                  border: `1px solid ${ch.accent}${["44","24","10"][ri]}`,
+                  transform: "translate(-50%,-50%)",
+                  transition: "border-color .8s ease",
+                  pointerEvents: "none",
+                }}/>
+              ))}
+            </>
+          )}
         </div>
 
         {/* frosted glass card — starts at 52% → fills bottom */}
@@ -181,7 +252,7 @@ function StoryScroll({ setPage }) {
             <span style={{
               fontSize: ".56rem", fontWeight: 700, letterSpacing: ".1em",
               color: "rgba(255,255,255,.2)", textTransform: "uppercase",
-            }}>{String(chapter + 1).padStart(2, "0")} / {String(STORY.length).padStart(2, "0")}</span>
+            }}>{String(chapter + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}</span>
           </div>
 
           {/* eyebrow */}
@@ -232,7 +303,7 @@ function StoryScroll({ setPage }) {
             }}>{ch.stat.label}</span>
           </div>
 
-          {chapter === STORY.length - 1 && (
+          {chapter === chapters.length - 1 && (
             <button key="cta-m" onClick={() => setPage("about")} style={{
               background: "#C9901A", border: "none", borderRadius: 10,
               color: "#fff", padding: "11px 20px", cursor: "pointer",
@@ -244,7 +315,7 @@ function StoryScroll({ setPage }) {
 
           {/* progress bar */}
           <div style={{ display: "flex", gap: 5, marginTop: 14 }}>
-            {STORY.map((s, i) => (
+            {chapters.map((s, i) => (
               <div key={i} style={{
                 height: 2.5, borderRadius: 2,
                 flex: i === chapter ? "0 0 24px" : "0 0 6px",
@@ -260,7 +331,7 @@ function StoryScroll({ setPage }) {
 
   /* ════════════════════ DESKTOP ════════════════════ */
   return (
-    <div ref={sectionRef} style={{ height: `calc(${STORY.length} * (100vh - 64px))`, position: "relative", background: "#0E0A06" }}>
+    <div ref={sectionRef} style={{ height: `calc(${chapters.length} * (100vh - 64px))`, position: "relative", background: "#0E0A06" }}>
       <div style={{
         position: "sticky", top: 64, height: "calc(100vh - 64px)",
         overflow: "hidden", display: "flex", background: "#0E0A06",
@@ -292,10 +363,10 @@ function StoryScroll({ setPage }) {
               transition: "height .5s ease, background .8s ease",
               boxShadow: `0 0 6px ${ch.accent}88`,
             }}/>
-            {STORY.map((s, i) => (
+            {chapters.map((s, i) => (
               <div key={i} style={{
                 position: "absolute", left: "50%",
-                top: `${(i / (STORY.length - 1)) * 100}%`,
+                top: `${(i / (chapters.length - 1)) * 100}%`,
                 transform: "translate(-50%,-50%)",
                 width: i === chapter ? 10 : 6, height: i === chapter ? 10 : 6,
                 borderRadius: "50%",
@@ -317,7 +388,7 @@ function StoryScroll({ setPage }) {
             <span style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(255,255,255,.32)" }}>{ch.stat.label}</span>
           </div>
 
-          {chapter === STORY.length - 1 && (
+          {chapter === chapters.length - 1 && (
             <button key="cta" onClick={() => setPage("about")} style={{ alignSelf: "flex-start", background: "#C9901A", border: "none", borderRadius: 10, color: "#fff", padding: "13px 28px", cursor: "pointer", fontWeight: 700, fontSize: ".88rem", letterSpacing: ".03em", animation: "storyFadeUp .55s .15s ease both" }}>
               Discover Our Full Story →
             </button>
@@ -327,7 +398,7 @@ function StoryScroll({ setPage }) {
         {/* ── Right visual panel ─────────────────── */}
         <div onMouseMove={handleTiltMove} onMouseLeave={resetTilt}
           style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-          {STORY.map((c, i) => (
+          {chapters.map((c, i) => (
             <div key={i} style={{
               position: "absolute", inset: 0, background: c.bg,
               opacity: i === chapter ? 1 : 0,
@@ -339,20 +410,40 @@ function StoryScroll({ setPage }) {
               <div style={{ position: "absolute", top: "10%", right: "8%", fontFamily: "'Noto Serif Telugu','Mandali',serif", fontSize: "clamp(3rem,7vw,6rem)", fontWeight: 700, color: c.accent, opacity: .12, lineHeight: 1, userSelect: "none" }}>{c.telugu}</div>
 
               {/* 3D-tilt card */}
-              <div style={{
-                position: "relative", zIndex: 2, textAlign: "center",
-                background: "rgba(0,0,0,.38)", backdropFilter: "blur(10px)",
-                borderRadius: 22, padding: "36px 52px", border: `1px solid ${c.accent}28`,
-                transform: i === chapter ? `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` : "perspective(900px) rotateX(0deg) rotateY(0deg)",
-                transition: tilt.x === 0 && tilt.y === 0 ? "transform .6s ease" : "transform .08s ease",
-                boxShadow: i === chapter && (tilt.x !== 0 || tilt.y !== 0)
-                  ? `${-tilt.y * 2}px ${tilt.x * 2}px 32px rgba(0,0,0,.45), inset 0 0 24px ${c.accent}12`
-                  : "0 20px 60px rgba(0,0,0,.3)",
-              }}>
-                <div style={{ fontSize: "clamp(3rem,7vw,5.5rem)", marginBottom: 14 }}>{c.emoji}</div>
-                <div style={{ fontFamily: "'Noto Serif Telugu','Mandali',serif", fontSize: "clamp(1.6rem,3.5vw,2.8rem)", color: c.accent, fontWeight: 700, marginBottom: 10 }}>{c.telugu}</div>
-                <div style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(255,255,255,.45)" }}>{c.tag}</div>
-              </div>
+              {c.image ? (
+                <div style={{
+                  position: "relative", zIndex: 2, textAlign: "center", overflow: "hidden",
+                  width: "clamp(260px,30vw,380px)", height: "clamp(320px,38vw,460px)",
+                  borderRadius: 22, border: `1px solid ${c.accent}28`,
+                  transform: i === chapter ? `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` : "perspective(900px) rotateX(0deg) rotateY(0deg)",
+                  transition: tilt.x === 0 && tilt.y === 0 ? "transform .6s ease" : "transform .08s ease",
+                  boxShadow: i === chapter && (tilt.x !== 0 || tilt.y !== 0)
+                    ? `${-tilt.y * 2}px ${tilt.x * 2}px 32px rgba(0,0,0,.45), inset 0 0 24px ${c.accent}12`
+                    : "0 20px 60px rgba(0,0,0,.3)",
+                }}>
+                  <img src={c.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}/>
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,.45) 60%,rgba(0,0,0,.72) 100%)" }}/>
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "26px 22px" }}>
+                    <div style={{ fontFamily: "'Noto Serif Telugu','Mandali',serif", fontSize: "clamp(1.6rem,3.5vw,2.8rem)", color: c.accent, fontWeight: 700, marginBottom: 8, textShadow: "0 2px 14px rgba(0,0,0,.65)" }}>{c.telugu}</div>
+                    <div style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(255,255,255,.8)" }}>{c.tag}</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  position: "relative", zIndex: 2, textAlign: "center",
+                  background: "rgba(0,0,0,.38)", backdropFilter: "blur(10px)",
+                  borderRadius: 22, padding: "36px 52px", border: `1px solid ${c.accent}28`,
+                  transform: i === chapter ? `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` : "perspective(900px) rotateX(0deg) rotateY(0deg)",
+                  transition: tilt.x === 0 && tilt.y === 0 ? "transform .6s ease" : "transform .08s ease",
+                  boxShadow: i === chapter && (tilt.x !== 0 || tilt.y !== 0)
+                    ? `${-tilt.y * 2}px ${tilt.x * 2}px 32px rgba(0,0,0,.45), inset 0 0 24px ${c.accent}12`
+                    : "0 20px 60px rgba(0,0,0,.3)",
+                }}>
+                  <div style={{ fontSize: "clamp(3rem,7vw,5.5rem)", marginBottom: 14 }}>{c.emoji}</div>
+                  <div style={{ fontFamily: "'Noto Serif Telugu','Mandali',serif", fontSize: "clamp(1.6rem,3.5vw,2.8rem)", color: c.accent, fontWeight: 700, marginBottom: 10 }}>{c.telugu}</div>
+                  <div style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(255,255,255,.45)" }}>{c.tag}</div>
+                </div>
+              )}
 
               {[200, 320, 450].map((sz, ri) => (
                 <div key={ri} style={{ position: "absolute", width: sz, height: sz, border: `1px solid ${c.accent}15`, borderRadius: "50%", top: "50%", left: "50%", transform: "translate(-50%,-50%)", pointerEvents: "none" }}/>
@@ -363,7 +454,7 @@ function StoryScroll({ setPage }) {
 
         {/* right-edge dot nav */}
         <div style={{ position: "absolute", right: 22, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: 10, zIndex: 10 }}>
-          {STORY.map((_, i) => (
+          {chapters.map((_, i) => (
             <div key={i} style={{
               width: i === chapter ? 8 : 5, height: i === chapter ? 8 : 5,
               borderRadius: "50%",
@@ -379,35 +470,35 @@ function StoryScroll({ setPage }) {
 }
 
 // ── 1. Typewriter ─────────────────────────────────────────────────────────────
-const PHRASES = [
+export const DEFAULT_TAGLINE_PHRASES = [
   "Handcrafted with Centuries of Tradition",
-  "GI-Tagged · Certified Authentic",
+  "Certified Authentic Craft",
   "Supporting 48 Artisan Families",
   "Shipped from Karimnagar, Telangana",
 ];
 
-function Typewriter() {
+function Typewriter({ phrases = DEFAULT_TAGLINE_PHRASES }) {
   const [{ text, idx, del }, set] = useState({ text: "", idx: 0, del: false });
   useEffect(() => {
-    const full = PHRASES[idx];
+    const full = phrases[idx] || "";
     const delay = del
       ? (text.length > 0 ? 42 : 320)
       : (text.length < full.length ? 76 : 1700);
     const t = setTimeout(() => {
       if (!del) {
         if (text.length < full.length)
-          set(s => ({ ...s, text: PHRASES[s.idx].slice(0, s.text.length + 1) }));
+          set(s => ({ ...s, text: (phrases[s.idx] || "").slice(0, s.text.length + 1) }));
         else
           set(s => ({ ...s, del: true }));
       } else {
         if (text.length > 0)
           set(s => ({ ...s, text: s.text.slice(0, -1) }));
         else
-          set(s => ({ text: "", idx: (s.idx + 1) % PHRASES.length, del: false }));
+          set(s => ({ text: "", idx: (s.idx + 1) % phrases.length, del: false }));
       }
     }, delay);
     return () => clearTimeout(t);
-  }, [text, idx, del]);
+  }, [text, idx, del, phrases]);
 
   return (
     <span className="tw-line">
@@ -493,12 +584,6 @@ function Reveal({ children, delay = 0, y = 42 }) {
 }
 
 // ── 4. Stats Counter ──────────────────────────────────────────────────────────
-const STATS = [
-  { val: 200, suffix: "+", label: "Handcrafted Products" },
-  { val: 5000, suffix: "+", label: "Happy Customers" },
-  { val: 48, suffix: "",   label: "Artisan Families" },
-  { val: 300, suffix: "+", label: "Years of Heritage" },
-];
 
 function StatItem({ val, suffix, label }) {
   const [count, setCount] = useState(0);
@@ -539,33 +624,6 @@ function StatItem({ val, suffix, label }) {
       }}>
         {label}
       </div>
-    </div>
-  );
-}
-
-// ── 5. Mandala Ring ───────────────────────────────────────────────────────────
-function MandalaRing({ size, border, dotColor, dotCount, radius, spin, dotSize = 6, speed }) {
-  return (
-    <div style={{
-      position: "absolute",
-      width: size, height: size,
-      borderRadius: "50%",
-      border,
-      animation: `${spin === "cw" ? "spin-cw" : "spin-ccw"} ${speed}s linear infinite`,
-    }}>
-      {Array.from({ length: dotCount }, (_, i) => {
-        const a = (i / dotCount) * Math.PI * 2;
-        return (
-          <div key={i} style={{
-            position: "absolute",
-            width: dotSize, height: dotSize,
-            borderRadius: dotSize <= 5 ? 2 : "50%",
-            background: dotColor,
-            top: `calc(50% + ${(Math.sin(a) * radius).toFixed(2)}px - ${dotSize / 2}px)`,
-            left: `calc(50% + ${(Math.cos(a) * radius).toFixed(2)}px - ${dotSize / 2}px)`,
-          }} />
-        );
-      })}
     </div>
   );
 }
@@ -659,83 +717,6 @@ function TestimonialsSection({ reviews }) {
   );
 }
 
-// ── NEW: Cursor Ink Trail (canvas) ───────────────────────────────────────────
-function InkCanvas() {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-
-    const setSize = () => {
-      canvas.width  = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    setSize();
-    const ro = new ResizeObserver(setSize);
-    ro.observe(canvas);
-
-    const COLORS = ["#E8620A","#C9901A","#FFD700","#FF8C38","#FFA040","#FFE08A"];
-    const particles = [];
-    let raf = null;
-
-    const tick = () => {
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        ctx.globalAlpha = Math.max(0, p.life * p.alpha);
-        ctx.fillStyle   = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, Math.max(0, p.r), 0, Math.PI * 2);
-        ctx.fill();
-        p.x    += p.vx;
-        p.y    += p.vy;
-        p.r    *= 0.96;
-        p.life -= p.decay;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
-      ctx.globalAlpha = 1;
-      raf = particles.length > 0 ? requestAnimationFrame(tick) : null;
-    };
-
-    const onMove = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
-      for (let i = 0; i < 5; i++) {
-        particles.push({
-          x: x + (Math.random() - .5) * 10,
-          y: y + (Math.random() - .5) * 10,
-          r: 2.5 + Math.random() * 5,
-          color: COLORS[Math.floor(Math.random() * COLORS.length)],
-          alpha: .65 + Math.random() * .35,
-          life: 1,
-          vx: (Math.random() - .5) * 1.6,
-          vy: -(Math.random() * 1.8 + .3),
-          decay: .022 + Math.random() * .022,
-        });
-      }
-      if (!raf) raf = requestAnimationFrame(tick);
-    };
-
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("mousemove", onMove);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  return (
-    <canvas ref={ref} style={{
-      position: "absolute", inset: 0, width: "100%", height: "100%",
-      pointerEvents: "none", zIndex: 6,
-    }} />
-  );
-}
-
 // ── NEW: SVG Wave Divider ─────────────────────────────────────────────────────
 function Wave({ from, to, flip = false, h = 72 }) {
   return (
@@ -745,38 +726,6 @@ function Wave({ from, to, flip = false, h = 72 }) {
         <path d={`M0,${h*.5} C360,${h} 720,0 1080,${h*.5} S1440,${h} 1440,${h*.35} L1440,${h} L0,${h} Z`}
           fill={to} />
       </svg>
-    </div>
-  );
-}
-
-// ── NEW: Floating Embers ──────────────────────────────────────────────────────
-function Embers() {
-  const [particles] = useState(() =>
-    Array.from({ length: 24 }, (_, i) => ({
-      id: i,
-      x: 3 + Math.random() * 94,
-      size: 2 + Math.random() * 4,
-      delay: Math.random() * 8,
-      dur: 5 + Math.random() * 6,
-      col: ["rgba(232,98,10,.7)","rgba(201,144,26,.6)","rgba(255,200,60,.5)","rgba(255,140,50,.55)"][i % 4],
-      diamond: Math.random() > .5,
-    }))
-  );
-  return (
-    <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
-      {particles.map(p => (
-        <div key={p.id} style={{
-          position:"absolute",
-          bottom: "-10px",
-          left: `${p.x}%`,
-          width: p.size,
-          height: p.size,
-          borderRadius: p.diamond ? "2px" : "50%",
-          background: p.col,
-          transform: p.diamond ? "rotate(45deg)" : "none",
-          animation: `ember-rise ${p.dur}s ${p.delay}s ease-out infinite`,
-        }} />
-      ))}
     </div>
   );
 }
@@ -803,27 +752,45 @@ const REVIEW_DEFAULTS = [
   { id:"r1", init:"PR", name:"Priya Reddy",   loc:"Hyderabad",  rating:5, product:"Lacquer Art Pot",        text:"The pot I ordered is breathtaking! The intricate brushwork and vibrant colours are even more beautiful in person. It's now the centrepiece of my living room." },
   { id:"r2", init:"AK", name:"Anil Kumar",    loc:"Bangalore",  rating:5, product:"Artisan Wall Clock",     text:"Gifted this clock to my parents for their anniversary. They were moved to tears by the authentic craftsmanship. Delivered ahead of schedule — couldn't be happier." },
   { id:"r3", init:"MS", name:"Meera Sharma",  loc:"Mumbai",     rating:5, product:"Heritage Bed Sheet Set", text:"These bed sheets are a work of art! Every morning feels special waking up surrounded by these gorgeous traditional patterns. Truly a piece of Telangana's heritage." },
-  { id:"r4", init:"RT", name:"Ravi Teja",     loc:"Chennai",    rating:5, product:"Artisan Home Decor",     text:"As someone who values authentic Indian handicrafts, Telugu Seemalo delivers exactly what they promise — GI-certified, handcrafted pieces with a story behind every stroke." },
+  { id:"r4", init:"RT", name:"Ravi Teja",     loc:"Chennai",    rating:5, product:"Artisan Home Decor",     text:"As someone who values authentic Indian handicrafts, Telugu Seemalo delivers exactly what they promise — authentic, handcrafted pieces with a story behind every stroke." },
   { id:"r5", init:"SN", name:"Sunitha Nair",  loc:"Kochi",      rating:5, product:"Artisan Curtain Pair",   text:"The curtains transformed my living room completely! The colours are so rich and the quality is exceptional. This is my second order and I'm already planning a third." },
-  { id:"r6", init:"VP", name:"Venkat Prasad", loc:"Vijayawada", rating:5, product:"Lacquer Art Pot",        text:"Proud to display a GI-tagged piece of our own Telugu heritage at home. The artisans' skill is extraordinary — every line is so precise and full of meaning." },
+  { id:"r6", init:"VP", name:"Venkat Prasad", loc:"Vijayawada", rating:5, product:"Lacquer Art Pot",        text:"Proud to display an authentic piece of our own Telugu heritage at home. The artisans' skill is extraordinary — every line is so precise and full of meaning." },
 ];
 
 export default function HomePage({ setPage, onOpen, onAdd }) {
   const [featured, setFeatured]       = useState([]);
   const [siteReviews, setSiteReviews] = useState([]);
   const [mounted, setMounted]         = useState(false);
-  const [glow, setGlow]               = useState({ x: 0, y: 0, active: false });
 
-  const slowRef  = useRef(null);
-  const midRef   = useRef(null);
-  const fastRef  = useRef(null);
-  const rafRef   = useRef(null);
+  const [heroSlides, setHeroSlides] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem("ts_heroSlides"));
+      return Array.isArray(cached) && cached.length > 0 ? cached : DEFAULT_HERO_SLIDES;
+    } catch { return DEFAULT_HERO_SLIDES; }
+  });
+  const [heroCfg, setHeroCfg] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem("ts_heroCfg"));
+      return cached && typeof cached === "object" ? cached : { enabled: true, autoplaySpeed: 7, taglinePhrases: DEFAULT_TAGLINE_PHRASES };
+    } catch { return { enabled: true, autoplaySpeed: 7, taglinePhrases: DEFAULT_TAGLINE_PHRASES }; }
+  });
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [heroPaused, setHeroPaused]   = useState(false);
+
+  const [trustItems, setTrustItems] = useState(DEFAULT_TRUST_ITEMS);
+  const [trustEnabled, setTrustEnabled] = useState(true);
+  const [statsItems, setStatsItems] = useState(DEFAULT_STATS_ITEMS);
+  const [statsEnabled, setStatsEnabled] = useState(true);
+  const [storyChapters, setStoryChapters] = useState(DEFAULT_STORY_CHAPTERS);
+  const [categoryItems, setCategoryItems] = useState(DEFAULT_CATEGORY_ITEMS);
+
   const heroRef  = useRef(null);
 
   useEffect(() => {
-    getProducts().then(all =>
-      setFeatured(all.filter(p => p.isNew || p.rating >= 4.8).slice(0, 4))
-    );
+    getProducts().then(all => {
+      const picked = all.filter(p => p.featured);
+      setFeatured((picked.length > 0 ? picked : all.filter(p => p.isNew || p.rating >= 4.8)).slice(0, 4));
+    });
     getDoc(doc(db, "settings", "siteReviews"))
       .then(snap => {
         const items = snap.exists() ? (snap.data().items || []) : [];
@@ -832,7 +799,86 @@ export default function HomePage({ setPage, onOpen, onAdd }) {
           : REVIEW_DEFAULTS);
       })
       .catch(() => setSiteReviews(REVIEW_DEFAULTS));
+    getDoc(doc(db, "settings", "heroSlides"))
+      .then(snap => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        if (Array.isArray(data.slides) && data.slides.length > 0) {
+          setHeroSlides(data.slides);
+          try { localStorage.setItem("ts_heroSlides", JSON.stringify(data.slides)); } catch {}
+        }
+        const cfg = {
+          enabled: data.enabled !== false,
+          autoplaySpeed: data.autoplaySpeed || 7,
+          taglinePhrases: Array.isArray(data.taglinePhrases) && data.taglinePhrases.length > 0 ? data.taglinePhrases : DEFAULT_TAGLINE_PHRASES,
+        };
+        setHeroCfg(cfg);
+        try { localStorage.setItem("ts_heroCfg", JSON.stringify(cfg)); } catch {}
+      })
+      .catch(() => {});
+    getDoc(doc(db, "settings", "trustStrip"))
+      .then(snap => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        if (Array.isArray(data.items) && data.items.length > 0) setTrustItems(data.items);
+        setTrustEnabled(data.enabled !== false);
+      })
+      .catch(() => {});
+    getDoc(doc(db, "settings", "statsCounter"))
+      .then(snap => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        if (Array.isArray(data.items) && data.items.length > 0) setStatsItems(data.items);
+        setStatsEnabled(data.enabled !== false);
+      })
+      .catch(() => {});
+    getDoc(doc(db, "settings", "storyChapters"))
+      .then(snap => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        if (Array.isArray(data.chapters) && data.chapters.length > 0) setStoryChapters(data.chapters);
+      })
+      .catch(() => {});
+    getDoc(doc(db, "settings", "shopCategories"))
+      .then(snap => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        if (Array.isArray(data.items) && data.items.length > 0) setCategoryItems(data.items);
+      })
+      .catch(() => {});
   }, []);
+
+  // Hero autoplay
+  useEffect(() => {
+    if (!heroCfg.enabled || heroSlides.length < 2 || heroPaused) return;
+    const t = setInterval(() => {
+      setActiveSlide(i => (i + 1) % heroSlides.length);
+    }, Math.max(2, heroCfg.autoplaySpeed) * 1000);
+    return () => clearInterval(t);
+  }, [heroCfg, heroSlides, heroPaused]);
+
+  useEffect(() => {
+    if (activeSlide >= heroSlides.length) setActiveSlide(0);
+  }, [heroSlides, activeSlide]);
+
+  const rawActiveSlideData = heroSlides[activeSlide] || heroSlides[0];
+  const [deviceClass, setDeviceClass] = useState("desktop");
+  useEffect(() => {
+    const calc = () => {
+      const w = window.innerWidth;
+      setDeviceClass(w <= 767 ? "mobile" : w <= 1279 ? "tablet" : "desktop");
+    };
+    calc();
+    window.addEventListener("resize", calc, { passive: true });
+    return () => window.removeEventListener("resize", calc);
+  }, []);
+  const heroImage =
+    (deviceClass === "mobile"  && rawActiveSlideData.imageMobile) ||
+    (deviceClass === "tablet"  && rawActiveSlideData.imageTablet) ||
+    rawActiveSlideData.image;
+  const activeSlideData = { ...rawActiveSlideData, image: heroImage };
+  const prevSlide = () => setActiveSlide(i => (i - 1 + heroSlides.length) % heroSlides.length);
+  const nextSlide = () => setActiveSlide(i => (i + 1) % heroSlides.length);
 
   // Staggered entrance — trigger after first paint
   useEffect(() => {
@@ -840,30 +886,8 @@ export default function HomePage({ setPage, onOpen, onAdd }) {
     return () => clearTimeout(t);
   }, []);
 
-  // Parallax scroll
-  useEffect(() => {
-    const tick = () => {
-      const y = window.scrollY;
-      if (slowRef.current)  slowRef.current.style.transform  = `translateY(${y * 0.15}px)`;
-      if (midRef.current)   midRef.current.style.transform   = `translateY(${y * 0.40}px)`;
-      if (fastRef.current)  fastRef.current.style.transform  = `translateY(${y * 0.65}px)`;
-      rafRef.current = null;
-    };
-    const onScroll = () => { if (!rafRef.current) rafRef.current = requestAnimationFrame(tick); };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  // Mouse-reactive glow handlers
-  const handleMouseMove = useCallback((e) => {
-    if (!heroRef.current) return;
-    const rect = heroRef.current.getBoundingClientRect();
-    setGlow({ x: e.clientX - rect.left, y: e.clientY - rect.top, active: true });
-  }, []);
-  const handleMouseLeave = useCallback(() => setGlow(g => ({ ...g, active: false })), []);
+  const handleHeroEnter = useCallback(() => setHeroPaused(true), []);
+  const handleHeroLeave = useCallback(() => setHeroPaused(false), []);
 
   // Staggered entrance helper
   const fi = (delay) => ({
@@ -878,118 +902,104 @@ export default function HomePage({ setPage, onOpen, onAdd }) {
       <div
         className="hero"
         ref={heroRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onMouseLeave={handleHeroLeave}
+        onMouseEnter={handleHeroEnter}
       >
-        {/* Cursor ink trail */}
-        <InkCanvas />
+        {/* Full-bleed slide background image with Ken Burns motion */}
+        {activeSlideData.image && (
+          <div className="hero-slide-bg-wrap">
+            <img key={activeSlideData.id}
+              src={cldOptimize(activeSlideData.image, deviceClass === "mobile" ? 900 : deviceClass === "tablet" ? 1400 : 1920)}
+              alt="" className="hero-slide-bg-img" fetchpriority="high" />
+            <div className="hero-slide-overlay" />
+          </div>
+        )}
 
-        {/* Mouse-reactive glow */}
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-          background: glow.active
-            ? `radial-gradient(600px circle at ${glow.x}px ${glow.y}px, rgba(232,98,10,.13) 0%, rgba(201,144,26,.06) 40%, transparent 70%)`
-            : "none",
-          transition: "background .12s ease",
-        }} />
+        {/* Content — staggered entrance + per-slide transitions */}
+        <div className="hero-text-wrap" style={{ position:"relative", zIndex:1, width:"100%", maxWidth:1320, margin:"0 auto" }}>
 
-        {/* Floating embers */}
-        <Embers />
-
-        {/* Mandala rings */}
-        <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:0,pointerEvents:"none",overflow:"hidden" }}>
-          <MandalaRing size={580} radius={290} border="1px solid rgba(201,144,26,.09)"  dotColor="rgba(201,144,26,.24)"  dotCount={6} spin="cw"  dotSize={7} speed={34} />
-          <MandalaRing size={360} radius={180} border="1.5px solid rgba(232,98,10,.14)" dotColor="rgba(232,98,10,.27)"   dotCount={8} spin="ccw" dotSize={5} speed={21} />
-          <MandalaRing size={185} radius={92}  border="1px solid rgba(228,191,145,.14)" dotColor="rgba(228,191,145,.29)" dotCount={5} spin="cw"  dotSize={4} speed={13} />
-        </div>
-
-        {/* Parallax layer 1 — slow 0.15× */}
-        <div ref={slowRef} style={{ position:"absolute",inset:"-30% 0",zIndex:0,pointerEvents:"none",willChange:"transform" }}>
-          <div style={{ position:"absolute",top:"10%",left:"6%",width:200,height:200,borderRadius:"50%",border:"1px solid rgba(228,191,145,.07)" }} />
-          <div style={{ position:"absolute",bottom:"8%",right:"8%",width:260,height:260,borderRadius:"50%",border:"1px solid rgba(232,98,10,.06)" }} />
-        </div>
-
-        {/* Parallax layer 2 — medium 0.40× */}
-        <div ref={midRef} style={{ position:"absolute",inset:"-30% 0",zIndex:0,pointerEvents:"none",willChange:"transform" }}>
-          <div style={{ position:"absolute",top:"18%",left:"9%",width:72,height:72,borderRadius:"50%",border:"1.5px solid rgba(232,98,10,.18)" }} />
-          <div style={{ position:"absolute",top:"60%",left:"5%",width:38,height:38,borderRadius:"50%",background:"rgba(232,98,10,.08)" }} />
-          <div style={{ position:"absolute",top:"22%",right:"9%",width:56,height:56,borderRadius:"50%",border:"1px solid rgba(228,191,145,.16)" }} />
-          <div style={{ position:"absolute",top:"68%",right:"6%",width:90,height:90,borderRadius:"50%",border:"1.5px solid rgba(232,98,10,.12)" }} />
-          <div style={{ position:"absolute",top:"8%",right:"28%",width:10,height:10,borderRadius:"50%",background:"rgba(232,98,10,.32)" }} />
-          <div style={{ position:"absolute",top:"78%",left:"32%",width:7,height:7,borderRadius:"50%",background:"rgba(228,191,145,.38)" }} />
-        </div>
-
-        {/* Parallax layer 3 — fast 0.65× */}
-        <div ref={fastRef} style={{ position:"absolute",inset:"-30% 0",zIndex:0,pointerEvents:"none",willChange:"transform" }}>
-          <div style={{ position:"absolute",top:"15%",left:"22%",width:18,height:18,borderRadius:3,border:"1.5px solid rgba(232,98,10,.26)",transform:"rotate(45deg)" }} />
-          <div style={{ position:"absolute",top:"72%",right:"22%",width:14,height:14,borderRadius:2,border:"1px solid rgba(228,191,145,.28)",transform:"rotate(30deg)" }} />
-          <div style={{ position:"absolute",top:"35%",right:"3%",width:10,height:10,borderRadius:2,background:"rgba(232,98,10,.2)",transform:"rotate(45deg)" }} />
-          <div style={{ position:"absolute",top:"55%",left:"14%",width:8,height:8,borderRadius:"50%",background:"rgba(228,191,145,.22)" }} />
-        </div>
-
-        {/* Content — staggered entrance */}
-        <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Text content, right-aligned over the full-bleed image */}
+          <div className="hero-content-right">
 
           <div style={fi(0)}>
-            <span className="hero-tel">హస్తకళ</span>
+            <span className="hero-tel">{activeSlideData.telugu}</span>
           </div>
 
           {/* Heading with brush stroke */}
-          <div style={fi(150)}>
+          <div key={`h-${activeSlideData.id}`} className="hero-slide-fade" style={{ animationDelay: "60ms" }}>
             <h1>
-              Authentic{" "}
+              {activeSlideData.headingLine1}{" "}
               <span style={{ display:"inline-block", position:"relative" }}>
-                <em className="shimmer-txt">Handcrafted</em>
+                <em className="shimmer-txt">{activeSlideData.headingHighlight}</em>
                 <BrushStroke />
               </span>
-              <br />Lacquer Art
+              <br />{activeSlideData.headingLine2}
             </h1>
           </div>
 
           <div style={fi(300)}>
-            <div className="tw-wrap"><Typewriter /></div>
+            <div className="tw-wrap"><Typewriter phrases={heroCfg.taglinePhrases}/></div>
           </div>
 
-          <div style={fi(430)}>
-            <p>GI-tagged handcrafted treasures from the heart of Karimnagar, Telangana — bringing centuries of artisan tradition to your home.</p>
+          <div key={`p-${activeSlideData.id}`} className="hero-slide-fade" style={{ animationDelay: "140ms" }}>
+            <p>{activeSlideData.description}</p>
           </div>
 
-          <div style={fi(560)}>
+          <div key={`b-${activeSlideData.id}`} className="hero-slide-fade" style={{ animationDelay: "220ms" }}>
             <div className="hero-btns">
-              <SparkBtn className="btn-sf" onClick={() => setPage("shop")}>Shop Now</SparkBtn>
-              <button className="btn-out" onClick={() => setPage("about")}>Our Story</button>
+              <SparkBtn className="btn-sf" onClick={() => setPage(activeSlideData.primaryBtnPage || "shop")}>{activeSlideData.primaryBtnLabel}</SparkBtn>
+              <button className="btn-out" onClick={() => setPage(activeSlideData.secondaryBtnPage || "about")}>{activeSlideData.secondaryBtnLabel}</button>
             </div>
           </div>
 
-          <div style={fi(680)}>
-            <div className="gi-badge">🏅 GI Tag Registered · Government of India</div>
+          <div key={`g-${activeSlideData.id}`} className="hero-slide-fade" style={{ animationDelay: "300ms" }}>
+            <div className="gi-badge">{activeSlideData.badgeText}</div>
           </div>
 
+          </div>
         </div>
+
+        {/* Slide navigation — arrows + dots */}
+        {heroSlides.length > 1 && (
+          <div className="hero-slide-nav">
+            <button className="hero-arrow" onClick={prevSlide} aria-label="Previous slide">‹</button>
+            <div className="hero-dots">
+              {heroSlides.map((s, i) => (
+                <button key={s.id} className={`hero-dot ${i === activeSlide ? "active" : ""}`}
+                  onClick={() => setActiveSlide(i)} aria-label={`Go to slide ${i + 1}`} />
+              ))}
+            </div>
+            <button className="hero-arrow" onClick={nextSlide} aria-label="Next slide">›</button>
+          </div>
+        )}
       </div>
 
       {/* TRUST */}
-      <div className="trust">
-        {[["🚚","Free Delivery above ₹999"],["🏅","GI-Tagged Authentic Art"],["↩","Easy 7-day Returns"],["🎁","Gift Wrapping Available"]].map(([ic, lb]) => (
-          <div key={lb} className="trust-item"><span>{ic}</span><span>{lb}</span></div>
-        ))}
-      </div>
+      {trustEnabled && trustItems.length > 0 && (
+        <div className="trust">
+          {trustItems.map((t, i) => (
+            <div key={i} className="trust-item"><span>{t.icon}</span><span>{t.label}</span></div>
+          ))}
+        </div>
+      )}
 
       {/* MARQUEE STRIP */}
       <MarqueeStrip />
       <Wave from="#E8620A" to="#fff" />
 
       {/* STATS COUNTER */}
+      {statsEnabled && statsItems.length > 0 && (
       <div style={{ background: "#fff", padding: "54px 20px", borderBottom: "1px solid #F0E6D8" }}>
         <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 36 }}>
-          {STATS.map(s => <StatItem key={s.label} {...s} />)}
+          {statsItems.map((s, i) => <StatItem key={i} {...s} />)}
         </div>
       </div>
+      )}
 
       <Wave from="#fff" to="#0E0A06" flip />
 
       {/* OUR STORY — sticky scroll */}
-      <StoryScroll setPage={setPage} />
+      <StoryScroll setPage={setPage} chapters={storyChapters} />
 
       <Wave from="#0E0A06" to="#FDF8F3" />
 
@@ -1033,14 +1043,14 @@ export default function HomePage({ setPage, onOpen, onAdd }) {
             <div className="sec-hd"><h2>Shop by Category</h2><div className="divider" /></div>
           </Reveal>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 16 }}>
-            {[["🏺","Pots"],["🕰️","Clocks"],["🪟","Curtains"],["🛏️","Bed Sheets"],["🎨","Home Decor"]].map(([em, cat], i) => (
-              <Reveal key={cat} delay={i * 80}>
+            {categoryItems.map((c, i) => (
+              <Reveal key={c.label} delay={i * 80}>
                 <div onClick={() => setPage("shop")}
                   style={{ background: "#fff", borderRadius: 14, padding: "24px 16px", textAlign: "center", cursor: "pointer", boxShadow: "var(--sh)", transition: "all .2s" }}
                   onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                   onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
-                  <div style={{ fontSize: "2.4rem", marginBottom: 10 }}>{em}</div>
-                  <div style={{ fontWeight: 700, fontSize: ".9rem", color: "var(--dk)" }}>{cat}</div>
+                  <div style={{ fontSize: "2.4rem", marginBottom: 10 }}>{c.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: ".9rem", color: "var(--dk)" }}>{c.label}</div>
                 </div>
               </Reveal>
             ))}

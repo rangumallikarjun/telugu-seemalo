@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getReturnByOrderDocId } from "../firebase/returnService";
-import { fmt } from "../utils/helpers";
+import { fmt, NoImageIcon } from "../utils/helpers";
 
 const STEP_COLOR = {
   done:     { bg:"#E8620A", border:"#E8620A", text:"#fff" },
@@ -125,7 +125,9 @@ export default function ReturnTrackingModal({ order, onClose }) {
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {(request.items || []).map((it, i) => (
                     <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#F8F4F0",borderRadius:9}}>
-                      <span style={{fontSize:"1.2rem"}}>{it.emoji || "🏺"}</span>
+                      <div style={{width:28,height:28,borderRadius:6,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",background:"#F4EDE5",flexShrink:0}}>
+                        {it.images?.[0] ? <img src={it.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <NoImageIcon size="60%"/>}
+                      </div>
                       <div style={{flex:1}}>
                         <div style={{fontWeight:600,fontSize:".85rem"}}>{it.name}</div>
                         {(it.selSize || it.selColor) && <div style={{fontSize:".73rem",color:"#6B4C38"}}>{[it.selSize,it.selColor].filter(Boolean).join(" · ")}</div>}

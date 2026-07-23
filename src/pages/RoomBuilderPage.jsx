@@ -172,7 +172,7 @@ function MobileBlockScreen({ onBack }) {
 
       {/* bottom note */}
       <p style={{ color: "#4A3828", fontSize: 11, marginTop: 32 }}>
-        Telugu Seemalo · GI-Tagged Authentic Craft
+        Telugu Seemalo · Authentic Craft
       </p>
     </div>
   );

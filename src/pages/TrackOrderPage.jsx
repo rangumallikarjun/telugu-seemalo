@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fmt } from "../utils/helpers";
+import { fmt, NoImageIcon } from "../utils/helpers";
 import { getOrderById, getOrdersByUser } from "../firebase/orderService";
 import InvoiceModal from "../components/InvoiceModal";
 
@@ -79,7 +79,7 @@ export default function TrackOrderPage({ user, setPage }) {
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:10}}>
             <div>
               <div style={{fontSize:".8rem",color:"var(--mt)",marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>Order ID</div>
-              <div style={{fontFamily:"Cormorant Garamond,serif",fontSize:"1.5rem",fontWeight:700}}>{result.id}</div>
+              <div style={{fontSize:"1.5rem",fontWeight:700}}>{result.id}</div>
               <div style={{fontSize:".82rem",color:"var(--mt)",marginTop:4}}>
                 {result.createdAt?.toDate
                   ? result.createdAt.toDate().toLocaleDateString("en-IN",{day:"2-digit",month:"long",year:"numeric"})
@@ -106,7 +106,7 @@ export default function TrackOrderPage({ user, setPage }) {
               <div style={{position:"relative",display:"flex",alignItems:"flex-start"}}>
                 {/* Connector line */}
                 <div style={{position:"absolute",top:18,left:"calc(50% / 3)",right:"calc(50% / 3)",height:3,background:"var(--bd)",zIndex:0}}/>
-                <div style={{position:"absolute",top:18,left:"calc(50% / 3)",width:`${Math.max(0, statusIdx) * 50}%`,height:3,background:"var(--sf)",zIndex:1,transition:"width .6s"}}/>
+                <div style={{position:"absolute",top:18,left:"calc(50% / 3)",width:`calc(${Math.max(0, statusIdx)} * 100% / 3)`,height:3,background:"var(--sf)",zIndex:1,transition:"width .6s"}}/>
                 {STEPS.map((step, i) => {
                   const done    = i < statusIdx;
                   const current = i === statusIdx;
@@ -154,6 +154,7 @@ export default function TrackOrderPage({ user, setPage }) {
           {result.tracking && !result.shiprocket?.awb && (
             <div style={{background:"#EAF2FF",border:"1px solid #BCD4F0",borderRadius:8,padding:"12px 16px",marginBottom:16,fontSize:".88rem"}}>
               <strong style={{color:"#1A5276"}}>📮 Tracking Number:</strong> <span style={{fontFamily:"monospace",fontWeight:700}}>{result.tracking}</span>
+              {result.trackingCarrier && <span style={{color:"#6B4C38"}}> · Carrier: <strong>{result.trackingCarrier}</strong></span>}
             </div>
           )}
 
@@ -172,8 +173,10 @@ export default function TrackOrderPage({ user, setPage }) {
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {(result.items || []).map((item, i) => (
                 <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:"1px solid var(--bd)"}}>
-                  <div style={{width:40,height:40,background:"linear-gradient(135deg,#FDF0E5,#FFF5EC)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.2rem",flexShrink:0}}>
-                    {item.emoji}
+                  <div style={{width:40,height:40,background:"linear-gradient(135deg,#FDF0E5,#FFF5EC)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.2rem",flexShrink:0,overflow:"hidden"}}>
+                    {item.images?.[0]
+                      ? <img src={item.images[0]} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      : <NoImageIcon/>}
                   </div>
                   <div style={{flex:1}}>
                     <div style={{fontWeight:600,fontSize:".88rem"}}>{item.name}</div>

@@ -11,3 +11,31 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Keep the Tawk.to chat launcher bubble behind our own overlays (cart drawer,
+   modals, mobile nav drawer) so it never floats on top of them while idle. */
+iframe[title="chat widget"],
+iframe[id^="tawk"],
+#tawkchat-container,
+#tawkchat-minified-container {
+  z-index: 800 !important;
+}
+
+/* Force the Tawk.to chat window to fill the screen on narrow viewports,
+   regardless of whether Tawk's own user-agent detection treats it as mobile. */
+@media (max-width: 640px) {
+  iframe[title="chat widget"],
+  #tawkchat-container iframe,
+  #tawkchat-container {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    z-index: 100000 !important;
+  }
+}

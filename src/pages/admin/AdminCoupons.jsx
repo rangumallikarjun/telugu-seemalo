@@ -37,8 +37,8 @@ function CouponModal({ coupon, onSave, onClose }) {
   };
 
   return (
-    <div className="admin-modal-bg" onClick={onClose}>
-      <div className="admin-modal" style={{maxWidth:560}} onClick={e => e.stopPropagation()}>
+    <div className="admin-modal-bg">
+      <div className="admin-modal" style={{maxWidth:560}}>
         <h2>{coupon ? "Edit Coupon" : "Create Coupon"}</h2>
 
         <div className="admin-form-grid">
@@ -91,11 +91,13 @@ function CouponModal({ coupon, onSave, onClose }) {
 
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:6}}>
           <div className="admin-inp-grp" style={{display:"flex",alignItems:"center",gap:10,margin:0}}>
-            <input type="checkbox" id="isActive" checked={!!form.isActive} onChange={e => set("isActive", e.target.checked)}/>
+            <input type="checkbox" id="isActive" checked={!!form.isActive} onChange={e => set("isActive", e.target.checked)}
+              style={{width:16,height:16,flexShrink:0,accentColor:"#E8620A"}}/>
             <label htmlFor="isActive" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>Active (coupon can be used)</label>
           </div>
           <div className="admin-inp-grp" style={{display:"flex",alignItems:"center",gap:10,margin:0}}>
-            <input type="checkbox" id="showToCustomers" checked={!!form.showToCustomers} onChange={e => set("showToCustomers", e.target.checked)}/>
+            <input type="checkbox" id="showToCustomers" checked={!!form.showToCustomers} onChange={e => set("showToCustomers", e.target.checked)}
+              style={{width:16,height:16,flexShrink:0,accentColor:"#E8620A"}}/>
             <label htmlFor="showToCustomers" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>
               Show to customers at checkout
               <span style={{marginLeft:6,fontSize:".76rem",color:"#6B4C38",fontWeight:400}}>(listed under "View available coupons")</span>
@@ -138,7 +140,9 @@ export default function AdminCoupons() {
   useEffect(() => { load(); }, []);
 
   const handleSave = async (data) => {
-    if (modal === "add") await addCoupon(data);
+    const isAdd = modal === "add";
+    if (!window.confirm(isAdd ? "Create this coupon?" : "Save changes to this coupon?")) return;
+    if (isAdd) await addCoupon(data);
     else { const { docId, ...rest } = { ...modal, ...data }; await updateCoupon(modal.docId, rest); }
     setModal(null);
     load();
@@ -151,6 +155,7 @@ export default function AdminCoupons() {
   };
 
   const handleToggle = async (docId, current) => {
+    if (!window.confirm(current ? "Deactivate this coupon?" : "Activate this coupon?")) return;
     await toggleCoupon(docId, !current);
     setCoupons(prev => prev.map(c => c.docId === docId ? { ...c, isActive: !current } : c));
   };

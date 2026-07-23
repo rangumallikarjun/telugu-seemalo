@@ -22,6 +22,9 @@ const AS = `
 .admin-topbar h1{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:#18100A;}
 .admin-topbar-right{display:flex;align-items:center;gap:12px;font-size:.85rem;color:#6B4C38;}
 .admin-content{padding:28px;}
+.admin-settings-grid{column-count:2;column-gap:24px;column-fill:balance;}
+.admin-settings-grid .admin-card{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;max-width:none!important;width:100%;display:inline-block;}
+@media(max-width:1100px){.admin-settings-grid{column-count:1;}}
 
 /* ─── ADMIN STAT CARDS ──────────────────────────────────────────────────────── */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px;margin-bottom:28px;}
@@ -173,6 +176,33 @@ const AS = `
 .sup-send-btn{background:linear-gradient(135deg,#E8620A,#C9901A);border:none;border-radius:10px;color:#fff;padding:9px 20px;font-weight:700;font-size:.87rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:transform .12s,box-shadow .12s;white-space:nowrap;}
 .sup-send-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(232,98,10,.3);}
 .sup-send-btn:disabled{opacity:.6;cursor:not-allowed;}
+
+/* ─── IMAGE CROP MODAL ─────────────────────────────────────────────────────── */
+.crop-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:4000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.crop-modal{background:#1A1310;border-radius:16px;width:100%;max-width:760px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;font-family:'DM Sans',sans-serif;}
+.crop-modal-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.crop-modal-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#fff;font-weight:700;font-size:.98rem;}
+.crop-frame-badge{background:rgba(232,98,10,.18);border:1px solid rgba(232,98,10,.4);color:#F0952C;font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:6px;}
+.crop-remaining-badge{background:rgba(255,255,255,.08);color:#9B8472;font-size:.68rem;font-weight:600;padding:3px 9px;border-radius:6px;}
+.crop-modal-close{background:none;border:none;color:#8A7060;font-size:1.1rem;cursor:pointer;padding:4px;line-height:1;transition:color .15s;}
+.crop-modal-close:hover{color:#fff;}
+.crop-modal-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.06);}
+.crop-ctrl-label{color:#8A7060;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-right:4px;}
+.crop-aspect-btn{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);color:#C4B49A;font-size:.78rem;font-weight:600;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .15s;}
+.crop-aspect-btn:hover{border-color:rgba(232,98,10,.5);color:#F0952C;}
+.crop-aspect-btn.act{background:rgba(232,98,10,.2);border-color:#E8620A;color:#F0952C;}
+.crop-reset-btn{background:none;border:1.5px solid rgba(255,255,255,.1);color:#8A7060;font-size:.78rem;font-weight:600;padding:5px 11px;border-radius:7px;cursor:pointer;margin-left:auto;transition:all .15s;}
+.crop-reset-btn:hover{color:#fff;border-color:rgba(255,255,255,.3);}
+.crop-dims{color:#8A7060;font-size:.76rem;font-weight:600;white-space:nowrap;}
+.crop-modal-zoom{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.06);color:#C4B49A;font-size:.8rem;}
+.crop-modal-zoom button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:1rem;line-height:1;flex-shrink:0;}
+.crop-modal-zoom button:hover{background:rgba(232,98,10,.2);border-color:#E8620A;}
+.crop-modal-zoom input[type=range]{flex:1;accentColor:#E8620A;accent-color:#E8620A;}
+.crop-zoom-pct{color:#F0952C;font-weight:700;width:42px;text-align:right;flex-shrink:0;}
+.crop-modal-area{position:relative;height:min(50vh,420px);background:#0A0705;flex-shrink:1;overflow:hidden;}
+.crop-modal-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);}
+.crop-hint{color:#6B5A4C;font-size:.76rem;}
+.crop-modal-actions{display:flex;gap:10px;margin-left:auto;}
 `;
 
 export default AS;

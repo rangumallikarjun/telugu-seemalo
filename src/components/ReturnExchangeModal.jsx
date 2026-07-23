@@ -4,6 +4,7 @@ import { updateOrderReturnStatus } from "../firebase/orderService";
 import { notifyReturnRequested } from "../firebase/notificationService";
 import { generateOtp, sendOtp } from "../firebase/otpService";
 import OtpVerifyModal from "./OtpVerifyModal";
+import { NoImageIcon } from "../utils/helpers";
 
 const REASONS_RETURN = [
   "Damaged / defective item",
@@ -69,7 +70,7 @@ export default function ReturnExchangeModal({ order, user, onClose, onSubmitted 
       notes: notes.trim(),
       items: selectedItems.map(it => ({
         name:     it.name,
-        emoji:    it.emoji || "",
+        images:   it.images || [],
         price:    it.price,
         qty:      it.qty,
         selSize:  it.selSize  || "",
@@ -130,7 +131,9 @@ export default function ReturnExchangeModal({ order, user, onClose, onSubmitted 
                 {items.map(it => (
                   <label key={it.idx} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",border:`1.5px solid ${it.selected ? "#E8620A" : "#E8D5C0"}`,borderRadius:10,cursor:"pointer",background:it.selected ? "#FFF3ED" : "#fff",transition:"all .15s"}}>
                     <input type="checkbox" checked={it.selected} onChange={() => toggleItem(it.idx)} style={{accentColor:"#E8620A",width:16,height:16,cursor:"pointer"}}/>
-                    <span style={{fontSize:"1.4rem"}}>{it.emoji || "🏺"}</span>
+                    <div style={{width:28,height:28,borderRadius:6,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",background:"#F4EDE5",flexShrink:0}}>
+                      {it.images?.[0] ? <img src={it.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <NoImageIcon size="60%"/>}
+                    </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:600,fontSize:".88rem",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{it.name}</div>
                       {(it.selSize || it.selColor) && (

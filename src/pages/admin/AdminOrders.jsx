@@ -71,6 +71,7 @@ export default function AdminOrders() {
   const [expanded, setExpanded] = useState(null);
   const [invoice, setInvoice]     = useState(null);
   const [walletCredit, setWalletCredit] = useState(null);
+  const [manualTracking, setManualTracking] = useState(null);
   const [awbLoading, setAwbLoading] = useState(null); // docId of order being processed
   const [awbMsg, setAwbMsg]         = useState({});   // { [docId]: "message" }
   const [syncLoading, setSyncLoading] = useState(null);
@@ -125,6 +126,7 @@ export default function AdminOrders() {
   const handleCreditWallet = async () => {
     const amt = parseFloat(walletCredit.amount);
     if (!amt || amt <= 0 || !walletCredit.userId) return;
+    if (!window.confirm(`Credit ₹${amt} to this customer's wallet for order ${walletCredit.orderId}?`)) return;
     setWalletCredit(w => ({ ...w, loading: true }));
     try {
       await creditWallet(
@@ -148,7 +150,32 @@ export default function AdminOrders() {
     }
   };
 
+  const handleSaveManualTracking = async () => {
+    const num = manualTracking.number.trim();
+    if (!num) return;
+    if (!window.confirm(`Save tracking number "${num}" (${manualTracking.carrier || "carrier not specified"}) for order ${manualTracking.orderId}? The customer will be notified.`)) return;
+    setManualTracking(t => ({ ...t, loading: true }));
+    try {
+      await patchOrder(manualTracking.docId, { tracking: num, trackingCarrier: manualTracking.carrier.trim() });
+      if (manualTracking.userId) {
+        createNotif({
+          userId:  manualTracking.userId,
+          type:    "order",
+          title:   "Tracking number added",
+          message: `Your order ${manualTracking.orderId} has a tracking number: ${num}${manualTracking.carrier ? ` (${manualTracking.carrier})` : ""}.`,
+          link:    "orders",
+          orderId: manualTracking.orderId,
+        }).catch(() => {});
+      }
+      setManualTracking(t => ({ ...t, loading: false, done: true }));
+      setTimeout(() => setManualTracking(null), 2000);
+    } catch {
+      setManualTracking(t => ({ ...t, loading: false }));
+    }
+  };
+
   const handlePushToSR = async (order) => {
+    if (!window.confirm(`Push order ${order.id} to ShipRocket? This creates a real shipment.`)) return;
     setAwbLoading(order.docId);
     try {
       await pushOrderToShiprocket(order.docId);
@@ -162,6 +189,7 @@ export default function AdminOrders() {
   };
 
   const handleAssignAWB = async (order) => {
+    if (!window.confirm(`Generate an AWB (courier waybill) for order ${order.id}? This assigns a courier and cannot be undone.`)) return;
     setAwbLoading(order.docId);
     try {
       const result = await assignShiprocketAWB(order.shiprocket.shipmentId, order.docId);
@@ -339,7 +367,7 @@ export default function AdminOrders() {
                     <td onClick={e => e.stopPropagation()}>
                       <div style={{display:"flex",gap:6,alignItems:"center"}}>
                         <select className="status-select" value={o.status}
-                          onChange={e => handleStatus(o.docId, e.target.value)}>
+                          onChange={e => { if (window.confirm(`Change order status to "${e.target.value}"? The customer will be notified.`)) handleStatus(o.docId, e.target.value); }}>
                           {STATUSES.map(s => <option key={s}>{s}</option>)}
                         </select>
                         <button className="admin-btn-icon" title="Generate Invoice"
@@ -382,13 +410,21 @@ export default function AdminOrders() {
                               </button>
                             )}
                             <button className="admin-btn admin-btn-outline admin-btn-sm"
+                              style={{borderColor:"#1A5276",color:"#1A5276"}}
+                              onClick={() => setManualTracking(
+                                manualTracking?.docId === o.docId ? null :
+                                { docId: o.docId, orderId: o.id, userId: o.userId, number: o.tracking || "", carrier: o.trackingCarrier || "", loading: false, done: false }
+                              )}>
+                              📮 {o.tracking ? "Edit" : "Add"} Tracking Number
+                            </button>
+                            <button className="admin-btn admin-btn-outline admin-btn-sm"
                               onClick={() => setInvoice(o)}>🧾 Generate Invoice</button>
                           </div>
                         </div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
                           {(o.items || []).map((item, i) => (
                             <div key={i} style={{background:"#fff",border:"1px solid #E8D5C0",borderRadius:8,padding:"8px 12px",fontSize:".83rem"}}>
-                              <span style={{marginRight:6}}>{item.emoji}</span><strong>{item.name}</strong>
+                              <strong>{item.name}</strong>
                               {item.selSize && <span style={{color:"#6B4C38"}}> · {item.selSize}</span>}
                               <span style={{fontWeight:700,marginLeft:8}}>{fmt(item.price)} × {item.qty}</span>
                             </div>
@@ -491,6 +527,54 @@ export default function AdminOrders() {
                             )}
                           </div>
                         )}
+
+                        {/* Manual tracking number panel */}
+                        {manualTracking?.docId === o.docId && (
+                          <div style={{marginTop:14,background:"#EAF2FF",border:"1.5px solid #BCD4F0",borderRadius:10,padding:"14px 16px"}}>
+                            <div style={{fontWeight:700,fontSize:".85rem",color:"#1A5276",marginBottom:10}}>
+                              📮 Manual Tracking Number
+                            </div>
+                            {manualTracking.done ? (
+                              <div style={{color:"#1A5276",fontWeight:700,fontSize:".9rem"}}>✅ Tracking number saved!</div>
+                            ) : (
+                              <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"flex-end"}}>
+                                <div>
+                                  <div style={{fontSize:".72rem",fontWeight:700,color:"#6B4C38",marginBottom:4}}>TRACKING NUMBER</div>
+                                  <input type="text"
+                                    placeholder="e.g. 794658312024"
+                                    value={manualTracking.number}
+                                    onChange={e => setManualTracking(t => ({...t, number: e.target.value}))}
+                                    style={{padding:"7px 12px",border:"1.5px solid #BCD4F0",borderRadius:8,
+                                      width:190,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+                                </div>
+                                <div>
+                                  <div style={{fontSize:".72rem",fontWeight:700,color:"#6B4C38",marginBottom:4}}>CARRIER</div>
+                                  <input type="text"
+                                    placeholder="e.g. FedEx, BlueDart, DTDC"
+                                    value={manualTracking.carrier}
+                                    onChange={e => setManualTracking(t => ({...t, carrier: e.target.value}))}
+                                    style={{padding:"7px 12px",border:"1.5px solid #BCD4F0",borderRadius:8,
+                                      width:160,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+                                </div>
+                                <div style={{display:"flex",gap:8}}>
+                                  <button onClick={handleSaveManualTracking}
+                                    disabled={manualTracking.loading || !manualTracking.number.trim()}
+                                    style={{padding:"8px 18px",background:"#1A5276",color:"#fff",border:"none",
+                                      borderRadius:8,fontWeight:700,cursor:"pointer",fontSize:".84rem",
+                                      fontFamily:"DM Sans,sans-serif",opacity: manualTracking.loading ? 0.7 : 1}}>
+                                    {manualTracking.loading ? "Saving…" : "Save Tracking"}
+                                  </button>
+                                  <button onClick={() => setManualTracking(null)}
+                                    style={{padding:"8px 14px",background:"none",border:"1.5px solid #BCD4F0",
+                                      borderRadius:8,cursor:"pointer",color:"#1A5276",fontSize:".82rem",fontFamily:"DM Sans,sans-serif"}}>
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {/* Wallet used in this order */}
                         {o.walletApplied > 0 && (
                           <div style={{marginTop:10,fontSize:".8rem",color:"#2D7D46",fontWeight:600}}>

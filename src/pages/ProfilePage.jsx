@@ -5,7 +5,7 @@ import { subscribeWalletBalance, subscribeWalletTxns, rechargeWallet } from "../
 import { subscribeUserTickets, addReply, subscribeTicket, markCustomerRead } from "../firebase/supportService";
 import { uploadSupportAttachment } from "../firebase/storageService";
 import { db } from "../firebase/config";
-import { fmt } from "../utils/helpers";
+import { fmt, NoImageIcon } from "../utils/helpers";
 import { subscribeOrdersByUser, cancelOrder } from "../firebase/orderService";
 import { notifyOrderCancelled } from "../firebase/notificationService";
 import { callProcessRefund } from "../services/razorpayService";
@@ -554,7 +554,7 @@ const NOTIF_TYPE = {
   welcome:      { icon:"🎉", color:"#E65100", bg:"#FFF3E0",  label:"Welcome" },
 };
 
-export default function ProfilePage({ user, setUser, setPage, products = [], onOpen }) {
+export default function ProfilePage({ user, setUser, setPage, products = [], onOpen, roomBuilderEnabled = true }) {
   const [tab, setTab]           = useState("overview");
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletTxns, setWalletTxns]       = useState([]);
@@ -661,6 +661,11 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
     }
   }, [tab, user?.uid]);
 
+  // Redirect away if Room Builder gets disabled while this tab is open
+  useEffect(() => {
+    if (tab === "room" && !roomBuilderEnabled) setTab("overview");
+  }, [tab, roomBuilderEnabled]);
+
   // Auto-select most recent active ticket whenever the support tab opens (survives refresh)
   useEffect(() => {
     if (tab === "support" && myTickets.length > 0 && !selTicketId) {
@@ -684,15 +689,12 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
     return () => window.removeEventListener("ts-profile-tab", handler);
   }, []);
 
-  // Auto-mark notifications as read when customer views the relevant tab
+  // Auto-mark support-type notifications as read when the customer views the Support tab.
+  // (The Notifications tab intentionally does NOT bulk-mark-as-read on open — it has its own
+  // Unread/All filter and per-item click-to-read, plus an explicit "Mark all read" button.)
   useEffect(() => {
     if (!user?.uid || !notifs.length) return;
-    if (tab === "notifications") {
-      // Mark everything read when the full notifications list is opened
-      const unread = notifs.filter(n => !isNotifRead(n, user.uid));
-      if (unread.length) markAllRead(notifs, user.uid);
-    } else if (tab === "support") {
-      // Mark only support-type notifications as read
+    if (tab === "support") {
       const unreadSupport = notifs.filter(n => n.type === "support" && !isNotifRead(n, user.uid));
       unreadSupport.forEach(n => markRead(n.id, user.uid, n.userId === "all"));
     }
@@ -845,7 +847,7 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
         @media(max-width:700px){
           .prof-wrap{grid-template-columns:1fr;}
           .prof-sidebar{position:static;height:auto;display:flex;flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid #EDE5DA;padding:0;top:0;}
-          .prof-tab-btn{padding:12px 16px;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;flex-shrink:0;}
+          .prof-tab-btn{width:auto;padding:12px 16px;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;flex-shrink:0;}
           .prof-tab-btn.pact{border-left:none;border-bottom-color:var(--sf);}
           .prof-content{padding:16px;}
           .prof-stat-grid{grid-template-columns:repeat(2,1fr);}
@@ -877,7 +879,7 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
 
         {/* Sidebar */}
         <nav className="prof-sidebar">
-          {NAV_TABS.map(t => (
+          {NAV_TABS.filter(t => t.id !== "room" || roomBuilderEnabled).map(t => (
             <button key={t.id} className={`prof-tab-btn${tab===t.id?" pact":""}`} onClick={() => setTab(t.id)}>
               <span style={{fontSize:"1rem"}}>{t.icon}</span>
               {t.label}
@@ -1378,8 +1380,10 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
                               <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
                                 {(o.items||[]).map((item,i) => (
                                   <div key={i} style={{display:"flex",alignItems:"center",gap:12}}>
-                                    <div style={{width:46,height:46,borderRadius:8,background:"linear-gradient(135deg,#FDF0E5,#FFF5EC)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0}}>
-                                      {item.emoji}
+                                    <div style={{width:46,height:46,borderRadius:8,background:"linear-gradient(135deg,#FDF0E5,#FFF5EC)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0,overflow:"hidden"}}>
+                                      {item.images?.[0]
+                                        ? <img src={item.images[0]} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                                        : <NoImageIcon/>}
                                     </div>
                                     <div style={{flex:1}}>
                                       <div style={{fontWeight:600,fontSize:".88rem"}}>{item.name}</div>
@@ -1751,7 +1755,7 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
                     {items.map(p => (
                       <div key={p.id} className="wl-card" onClick={()=>onOpen?.(p)}>
                         <div className="wl-img">
-                          {p.images?.[0]?<img src={p.images[0]} alt={p.name}/>:p.emoji}
+                          {p.images?.[0]?<img src={p.images[0]} alt={p.name}/>:<NoImageIcon/>}
                           <button className="wl-rm" title="Remove" onClick={e=>{e.stopPropagation();removeItem(p.id);}}>×</button>
                         </div>
                         <div className="wl-body">

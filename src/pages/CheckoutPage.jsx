@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
+import { useState, useEffect } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { fmt } from "../utils/helpers";
+import { fmt, NoImageIcon } from "../utils/helpers";
 import { createOrder } from "../firebase/orderService";
 import { collectDeviceFingerprint } from "../utils/deviceFingerprint";
 import { notifyOrderPlaced } from "../firebase/notificationService";
@@ -75,7 +74,6 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
   const [placing, setPlacing]     = useState(false);
   const [pinLookup, setPinLookup] = useState({ loading: false, error: "" });
   const [cityDraft,  setCityDraft]  = useState({ active: false, val: "" });
-  const recaptchaRef = useRef(null);
 
   const handlePinChange = async (pin) => {
     // Clear stale city/state the moment a new 6-digit pin is entered
@@ -285,11 +283,6 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
   const placeOrder = async e => {
     e.preventDefault();
     setWalletError("");
-    if (process.env.REACT_APP_RECAPTCHA_V2_SITE_KEY?.length > 10) {
-      const captchaToken = recaptchaRef.current?.getValue();
-      if (!captchaToken) { setWalletError("Please complete the CAPTCHA verification."); return; }
-      recaptchaRef.current.reset();
-    }
 
     // Open Razorpay if there's an amount to pay externally
     if (amountToPay > 0) {
@@ -356,7 +349,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
     const orderData = {
       id: orderId,
       items: cart.map(i => ({
-        id: i.id, name: i.name, emoji: i.emoji,
+        id: i.id, name: i.name, images: i.images || [],
         price: i.price, qty: i.qty,
         selSize: i.selSize || null, selColor: i.selColor || null,
       })),
@@ -770,7 +763,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                   <div className="ck-item-img">
                     {item.images?.[0]
                       ? <img src={item.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:6}}/>
-                      : item.emoji}
+                      : <NoImageIcon/>}
                   </div>
                   <div className="ck-item-info">
                     <div className="ck-item-name">{item.name}</div>
@@ -821,65 +814,12 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                   🎉 You're saving {fmt(discount + walletApplied)} on this order!
                 </div>
               )}
-              {process.env.REACT_APP_RECAPTCHA_V2_SITE_KEY?.length > 10 && (
-                <div style={{marginBottom:12}}>
-                  <ReCAPTCHA ref={recaptchaRef} sitekey={process.env.REACT_APP_RECAPTCHA_V2_SITE_KEY} theme="light"/>
-                </div>
-              )}
               <button type="submit" className="pay-btn" disabled={placing}>
                 {placing ? "Placing order…"
                   : amountToPay === 0 ? "Place Order (Wallet Paid) →"
                   : `Pay ${fmt(amountToPay)} →`}
               </button>
               <div className="razorpay-note">🔒 Secured by Razorpay · UPI · Cards · Wallets</div>
-
-              {/* ── Admin-only test card panel ── */}
-              {user?.role === "admin" && amountToPay > 0 && (
-                <div style={{
-                  marginTop: 18, borderRadius: 10, overflow: "hidden",
-                  border: "1.5px dashed #C9901A",
-                }}>
-                  <div style={{
-                    background: "#2A1A0A", padding: "8px 14px",
-                    display: "flex", alignItems: "center", gap: 8,
-                  }}>
-                    <span style={{ fontSize: 14 }}>🔑</span>
-                    <span style={{ color: "#C9901A", fontWeight: 700, fontSize: 12, letterSpacing: ".04em" }}>
-                      ADMIN TEST CARDS
-                    </span>
-                    <span style={{ color: "#6B5040", fontSize: 11, marginLeft: "auto" }}>
-                      Razorpay test mode only
-                    </span>
-                  </div>
-                  <div style={{ background: "#1A1208", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-                    {[
-                      { type: "Visa (Success)",       num: "4111 1111 1111 1111", exp: "12/26", cvv: "123", otp: "1234" },
-                      { type: "Mastercard (Success)", num: "5267 3181 8797 5449", exp: "12/26", cvv: "123", otp: "1234" },
-                      { type: "Visa (Failure)",       num: "4000 0000 0000 0002", exp: "12/26", cvv: "123", otp: "1234" },
-                      { type: "Rupay (Success)",      num: "6073 8490 7868 5709", exp: "12/26", cvv: "123", otp: "1234" },
-                    ].map(card => (
-                      <div key={card.num} style={{
-                        background: "#2A1A0A", borderRadius: 8,
-                        padding: "9px 12px", border: "1px solid #3A2A1A",
-                      }}>
-                        <div style={{ color: "#C9A96E", fontSize: 11, fontWeight: 700, marginBottom: 5 }}>
-                          {card.type}
-                        </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 11 }}>
-                          <TestField label="Card" value={card.num} />
-                          <TestField label="Expiry" value={card.exp} />
-                          <TestField label="CVV" value={card.cvv} />
-                          <TestField label="OTP" value={card.otp} />
-                        </div>
-                      </div>
-                    ))}
-                    <div style={{ color: "#4A3828", fontSize: 10, paddingTop: 2 }}>
-                      UPI test ID: <span style={{ color: "#C9901A", fontWeight: 700 }}>success@razorpay</span>
-                      &nbsp;·&nbsp;Failure UPI: <span style={{ color: "#8B4040", fontWeight: 700 }}>failure@razorpay</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -910,33 +850,5 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
       />
     )}
     </>
-  );
-}
-
-function TestField({ label, value }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard?.writeText(value.replace(/\s/g, ""));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
-  };
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-      <span style={{ color: "#6B5040" }}>{label}:</span>
-      <span style={{ color: "#E8A83A", fontFamily: "monospace", letterSpacing: ".06em", fontWeight: 700 }}>
-        {value}
-      </span>
-      <button
-        type="button"
-        onClick={copy}
-        style={{
-          background: "none", border: "none", cursor: "pointer",
-          color: copied ? "#6BCF6B" : "#6B5040", fontSize: 11, padding: "0 2px",
-        }}
-        title="Copy"
-      >
-        {copied ? "✓" : "⧉"}
-      </button>
-    </div>
   );
 }

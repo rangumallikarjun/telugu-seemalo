@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import { uploadReviewImage, uploadReviewVideo } from "../../firebase/storageService";
+import { useCropUpload } from "../../hooks/useCropUpload";
+import ImageCropModal from "../../components/ImageCropModal";
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const initials = (name) => name.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2);
@@ -10,9 +12,9 @@ const SITE_DEFAULTS = [
   { id:"r1", name:"Priya Reddy",   init:"PR", loc:"Hyderabad",  rating:5, product:"Lacquer Art Pot",        text:"The pot I ordered is breathtaking! The intricate brushwork and vibrant colours are even more beautiful in person. It's now the centrepiece of my living room.", visible:true },
   { id:"r2", name:"Anil Kumar",    init:"AK", loc:"Bangalore",  rating:5, product:"Artisan Wall Clock",     text:"Gifted this clock to my parents for their anniversary. They were moved to tears by the authentic craftsmanship. Beautifully packed and delivered ahead of schedule.", visible:true },
   { id:"r3", name:"Meera Sharma",  init:"MS", loc:"Mumbai",     rating:5, product:"Heritage Bed Sheet Set", text:"These bed sheets are a work of art! Every morning feels special waking up surrounded by these gorgeous traditional patterns. Truly a piece of Telangana's heritage.", visible:true },
-  { id:"r4", name:"Ravi Teja",     init:"RT", loc:"Chennai",    rating:5, product:"Artisan Home Decor",     text:"As someone who values authentic Indian handicrafts, Telugu Seemalo delivers exactly what they promise — GI-certified, handcrafted pieces with a story behind every stroke.", visible:true },
+  { id:"r4", name:"Ravi Teja",     init:"RT", loc:"Chennai",    rating:5, product:"Artisan Home Decor",     text:"As someone who values authentic Indian handicrafts, Telugu Seemalo delivers exactly what they promise — authentic, handcrafted pieces with a story behind every stroke.", visible:true },
   { id:"r5", name:"Sunitha Nair",  init:"SN", loc:"Kochi",      rating:5, product:"Artisan Curtain Pair",   text:"The curtains transformed my living room completely! The colours are so rich and the quality is exceptional. This is my second order and I'm already planning a third.", visible:true },
-  { id:"r6", name:"Venkat Prasad", init:"VP", loc:"Vijayawada", rating:5, product:"Lacquer Art Pot",        text:"Proud to display a GI-tagged piece of our own Telugu heritage at home. The artisans' skill is extraordinary — every line is so precise and full of meaning.", visible:true },
+  { id:"r6", name:"Venkat Prasad", init:"VP", loc:"Vijayawada", rating:5, product:"Lacquer Art Pot",        text:"Proud to display an authentic piece of our own Telugu heritage at home. The artisans' skill is extraordinary — every line is so precise and full of meaning.", visible:true },
 ];
 
 const BLANK_SITE = { name:"", init:"", loc:"", rating:5, product:"", text:"", visible:true };
@@ -160,6 +162,7 @@ export default function AdminReviews() {
 
   // ── Site review actions ──
   const saveSite = async () => {
+    if (!window.confirm("Save changes to homepage reviews? This will update the live site.")) return;
     setSiteSaving(true);
     await setDoc(doc(db, "settings", "siteReviews"), { items: siteRevs });
     setSiteSaving(false);
@@ -171,11 +174,15 @@ export default function AdminReviews() {
     setNewSite(BLANK_SITE); setAddSite(false);
   };
   const updateSite = (id, k, v) => setSiteRevs(p => p.map(r => r.id === id ? { ...r, [k]: v } : r));
-  const deleteSite = (id)      => setSiteRevs(p => p.filter(r => r.id !== id));
+  const deleteSite = (id) => {
+    if (!window.confirm("Remove this review? This cannot be undone once saved.")) return;
+    setSiteRevs(p => p.filter(r => r.id !== id));
+  };
 
   // ── Product review actions ──
   const saveProd = async () => {
     if (!selProd) return;
+    if (!window.confirm("Save changes to this product's reviews? This will update the live site.")) return;
     setProdSaving(true);
     await setDoc(doc(db, "productReviews", selProd), { reviews: prodRevs });
     setProdSaving(false);
@@ -188,16 +195,17 @@ export default function AdminReviews() {
     setNewProd(BLANK_PROD); setAddProd(false);
   };
   const updateProd = (id, k, v) => setProdRevs(p => p.map(r => r.id === id ? { ...r, [k]: v } : r));
-  const deleteProd = (id)      => setProdRevs(p => p.filter(r => r.id !== id));
+  const deleteProd = (id) => {
+    if (!window.confirm("Remove this review? This cannot be undone once saved.")) return;
+    setProdRevs(p => p.filter(r => r.id !== id));
+  };
 
   // ── Upload handlers for NEW review ──
-  const handleNewImages = async (files) => {
-    setNewImgUploading(true);
-    try {
-      const urls = await Promise.all(files.map(f => uploadReviewImage(f)));
-      setNewProd(s => ({ ...s, images: [...(s.images || []), ...urls] }));
-    } catch (e) { alert("Image upload failed: " + e.message); }
-    setNewImgUploading(false);
+  const reviewImgCrop = useCropUpload(uploadReviewImage, 1);
+  const handleNewImages = (files) => {
+    reviewImgCrop.open(files, (urls) => {
+      if (urls.length) setNewProd(s => ({ ...s, images: [...(s.images || []), ...urls] }));
+    });
   };
   const handleNewVideo = async (file) => {
     setNewVidUploading(true);
@@ -209,13 +217,10 @@ export default function AdminReviews() {
   };
 
   // ── Upload handlers for EDIT review ──
-  const handleEditImages = async (id, files, existing) => {
-    setEditUploading(true);
-    try {
-      const urls = await Promise.all(files.map(f => uploadReviewImage(f)));
-      updateProd(id, "images", [...(existing || []), ...urls]);
-    } catch (e) { alert("Image upload failed: " + e.message); }
-    setEditUploading(false);
+  const handleEditImages = (id, files, existing) => {
+    reviewImgCrop.open(files, (urls) => {
+      if (urls.length) updateProd(id, "images", [...(existing || []), ...urls]);
+    });
   };
   const handleEditVideo = async (id, file) => {
     setEditUploading(true);
@@ -577,6 +582,7 @@ export default function AdminReviews() {
           )}
         </div>
       )}
+      {reviewImgCrop.cropProps && <ImageCropModal {...reviewImgCrop.cropProps} />}
     </div>
   );
 }

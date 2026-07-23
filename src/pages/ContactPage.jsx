@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
+import { useState, useEffect } from "react";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "../firebase/config";
 import { createTicket } from "../firebase/supportService";
 import { emailCustomerConfirm, emailAdminNotify } from "../services/emailService";
 
@@ -13,6 +14,21 @@ const CATEGORIES = [
   { value: "other",     label: "Other" },
 ];
 
+const STORE_DEFAULTS = {
+  email: "hello@teluguseeamalo.in",
+  phone: "+91 9876 543 210",
+  address: "Karimnagar, Telangana, India",
+  contactEmailNote: "We reply within 24–48 hours on weekdays",
+  contactPhoneHours: "Mon–Sat · 10 AM – 6 PM IST",
+};
+
+const RESPONSE_TIMES_DEFAULTS = [
+  { label: "General Inquiry", time: "24–48 hrs" },
+  { label: "Order Issues",    time: "12–24 hrs" },
+  { label: "Payment Issues",  time: "6–12 hrs" },
+  { label: "Complaints",      time: "48–72 hrs" },
+];
+
 export default function ContactPage({ setPage, user }) {
   const [form, setForm] = useState({
     name: "", email: "", phone: "", orderId: "",
@@ -21,7 +37,21 @@ export default function ContactPage({ setPage, user }) {
   const [errors, setErrors]   = useState({});
   const [loading, setLoading] = useState(false);
   const [ticket, setTicket]   = useState(null);
-  const recaptchaRef = useRef(null);
+  const [store, setStore] = useState(STORE_DEFAULTS);
+  const [responseTimes, setResponseTimes] = useState(RESPONSE_TIMES_DEFAULTS);
+
+  useEffect(() => {
+    getDoc(doc(db, "settings", "store"))
+      .then(snap => { if (snap.exists()) setStore(s => ({ ...s, ...snap.data() })); })
+      .catch(() => {});
+    getDoc(doc(db, "settings", "responseTimes"))
+      .then(snap => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        if (Array.isArray(data.items) && data.items.length > 0) setResponseTimes(data.items);
+      })
+      .catch(() => {});
+  }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -38,9 +68,6 @@ export default function ContactPage({ setPage, user }) {
 
   const handleSubmit = async () => {
     if (!validate()) return;
-    const token = recaptchaRef.current?.getValue();
-    if (!token) { setErrors(e => ({ ...e, captcha: "Please complete the CAPTCHA verification." })); return; }
-    recaptchaRef.current.reset();
     setLoading(true);
     try {
       const ref = await createTicket({
@@ -187,11 +214,6 @@ export default function ContactPage({ setPage, user }) {
               {...inp("message")} style={{ resize:"vertical" }}/>
           </Grp>
 
-          <div style={{marginBottom:14}}>
-            <ReCAPTCHA ref={recaptchaRef} sitekey={process.env.REACT_APP_RECAPTCHA_V2_SITE_KEY} theme="light"/>
-            {errors.captcha && <p style={{color:"#C0392B",fontSize:".82rem",marginTop:6}}>{errors.captcha}</p>}
-          </div>
-
           <button className="ct-submit" onClick={handleSubmit} disabled={loading}>
             {loading ? "Submitting…" : "Send Message →"}
           </button>
@@ -203,36 +225,31 @@ export default function ContactPage({ setPage, user }) {
           <div className="ct-info-card">
             <div className="ct-info-icon">📧</div>
             <h4>Email Us</h4>
-            <p><a href="mailto:hello@teluguseeamalo.in">hello@teluguseeamalo.in</a></p>
-            <p style={{ marginTop:4, fontSize:".78rem" }}>We reply within 24–48 hours on weekdays</p>
+            <p><a href={`mailto:${store.email}`}>{store.email}</a></p>
+            <p style={{ marginTop:4, fontSize:".78rem" }}>{store.contactEmailNote}</p>
           </div>
 
           <div className="ct-info-card">
             <div className="ct-info-icon">📞</div>
             <h4>Call Us</h4>
-            <p><a href="tel:+919876543210">+91 9876 543 210</a></p>
-            <p style={{ marginTop:4, fontSize:".78rem" }}>Mon–Sat · 10 AM – 6 PM IST</p>
+            <p><a href={`tel:${store.phone.replace(/[^\d+]/g, "")}`}>{store.phone}</a></p>
+            <p style={{ marginTop:4, fontSize:".78rem" }}>{store.contactPhoneHours}</p>
           </div>
 
           <div className="ct-info-card">
             <div className="ct-info-icon">📍</div>
             <h4>Our Studio</h4>
-            <p>Artisan Quarter, Karimnagar<br/>Telangana – 505 001, India</p>
+            <p>{store.address}</p>
           </div>
 
           <div className="ct-info-card" style={{ background:"linear-gradient(135deg,#18100A,#2D1E12)", color:"#C4B49A" }}>
             <div className="ct-info-icon">⏱</div>
             <h4 style={{ color:"#F0BB50" }}>Response Times</h4>
             <div style={{ display:"flex", flexDirection:"column", gap:6, marginTop:6 }}>
-              {[
-                ["General Inquiry","24–48 hrs"],
-                ["Order Issues","12–24 hrs"],
-                ["Payment Issues","6–12 hrs"],
-                ["Complaints","48–72 hrs"],
-              ].map(([k, v]) => (
-                <div key={k} style={{ display:"flex", justifyContent:"space-between", fontSize:".82rem" }}>
-                  <span>{k}</span>
-                  <span style={{ color:"#F0BB50", fontWeight:700 }}>{v}</span>
+              {responseTimes.map((r) => (
+                <div key={r.label} style={{ display:"flex", justifyContent:"space-between", fontSize:".82rem" }}>
+                  <span>{r.label}</span>
+                  <span style={{ color:"#F0BB50", fontWeight:700 }}>{r.time}</span>
                 </div>
               ))}
             </div>

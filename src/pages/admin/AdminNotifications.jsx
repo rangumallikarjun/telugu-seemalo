@@ -111,6 +111,8 @@ export default function AdminNotifications() {
   const send = async () => {
     if (!form.title.trim() || !form.message.trim()) return;
     if (form.recipient === "user" && !recipientUser) return;
+    const who = form.recipient === "all" ? "all customers" : (recipientUser.name || recipientUser.email);
+    if (!window.confirm(`Send this notification to ${who}?`)) return;
     setSending(true);
 
     const uid   = form.recipient === "all" ? "all" : recipientUser.uid;
@@ -358,7 +360,7 @@ export default function AdminNotifications() {
                       <span style={{ fontSize:".72rem", color:"#9B8472" }}>{fmtTime(n.createdAt)}</span>
                     </div>
                   </div>
-                  <button onClick={() => deleteNotif(n.id)}
+                  <button onClick={() => { if (window.confirm("Delete this notification from history?")) deleteNotif(n.id); }}
                     style={{ background:"none", border:"none", cursor:"pointer", color:"#C0392B",
                       fontSize:"1.1rem", padding:0, flexShrink:0, lineHeight:1, opacity:.5 }}>
                     ×

@@ -3,6 +3,7 @@ import { getReturnRequests, updateReturnStatus } from "../../firebase/returnServ
 import { updateOrderReturnStatus, getOrderById } from "../../firebase/orderService";
 import { notifyReturnStatusChanged } from "../../firebase/notificationService";
 import { callProcessRefund } from "../../services/razorpayService";
+import { NoImageIcon } from "../../utils/helpers";
 
 const STATUS_COLOR = {
   Pending:   { bg:"#FFF3DC", color:"#B7770D" },
@@ -70,7 +71,9 @@ function ActionModal({ req, onClose, onSave }) {
             <div style={{fontSize:".75rem",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",color:"#6B4C38",marginBottom:8}}>Items Requested</div>
             {(req.items || []).map((it, i) => (
               <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #F0E8DF"}}>
-                <span style={{fontSize:"1.3rem"}}>{it.emoji || "🏺"}</span>
+                <div style={{width:30,height:30,borderRadius:6,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",background:"#F4EDE5",flexShrink:0}}>
+                  {it.images?.[0] ? <img src={it.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <NoImageIcon size="60%"/>}
+                </div>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:600,fontSize:".88rem"}}>{it.name}</div>
                   {(it.selSize || it.selColor) && <div style={{fontSize:".74rem",color:"#6B4C38"}}>{[it.selSize,it.selColor].filter(Boolean).join(" · ")}</div>}
@@ -140,6 +143,7 @@ export default function AdminReturns() {
   useEffect(() => { load(); }, []);
 
   const handleSave = async (docId, status, notes) => {
+    if (!window.confirm(`Update this return/exchange to "${status}"? The customer will be notified.`)) return;
     await updateReturnStatus(docId, status, notes);
     setRequests(prev => {
       const updated = prev.map(r => r.docId === docId ? { ...r, status, adminNotes: notes } : r);

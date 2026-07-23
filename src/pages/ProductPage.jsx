@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getDoc, doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { fmt, disc, Stars } from "../utils/helpers";
+import { fmt, disc, Stars, NoImageIcon } from "../utils/helpers";
 import ProductCard from "../components/ProductCard";
 import { trackView } from "../utils/recentlyViewed";
 import { uploadReviewImage, uploadReviewVideo } from "../firebase/storageService";
@@ -457,7 +457,7 @@ function fmtDate(d) {
 }
 
 // ── Image + Video slider ──────────────────────────────────────────────────────
-function MediaSlider({ images = [], video = "", emoji }) {
+function MediaSlider({ images = [], video = "" }) {
   const [idx, setIdx]           = useState(0);
   const [showVideo, setShowVideo] = useState(false);
 
@@ -474,7 +474,7 @@ function MediaSlider({ images = [], video = "", emoji }) {
   };
 
   if (!hasMedia) {
-    return <div className="pd-img">{emoji}</div>;
+    return <div className="pd-img"><NoImageIcon size="30%"/></div>;
   }
 
   return (
@@ -486,7 +486,7 @@ function MediaSlider({ images = [], video = "", emoji }) {
         ) : images.length > 0 ? (
           <img className="pd-slide-main" src={images[idx]} alt="product"/>
         ) : (
-          <div className="pd-slide-emoji">{emoji}</div>
+          <div className="pd-slide-emoji"><NoImageIcon size="30%"/></div>
         )}
 
         {images.length > 1 && !showVideo && (
@@ -614,18 +614,27 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
         <button className="pd-back" onClick={onBack}>← Back to Shop</button>
         <div className="pd-grid">
 
-          <MediaSlider images={p.images} video={p.video} emoji={p.emoji}/>
+          <MediaSlider images={p.images} video={p.video}/>
 
           <div className="pd-info">
             <div className="pd-cat">{p.category}</div>
+            {p.comingSoon && (
+              <div style={{display:"inline-block",background:"#FFF3DC",color:"#B7770D",fontWeight:800,fontSize:".72rem",letterSpacing:".06em",padding:"4px 10px",borderRadius:10,marginBottom:8}}>
+                ⏳ COMING SOON
+              </div>
+            )}
             <h1 className="pd-name">{p.name}</h1>
-            <div className="pd-stars"><Stars r={p.rating}/><span className="rv">{p.rating} · {p.reviews} reviews</span></div>
+            {(p.rating > 0 || p.reviews > 0) ? (
+              <div className="pd-stars"><Stars r={p.rating || 0}/><span className="rv">{p.rating || 0} · {p.reviews || 0} reviews</span></div>
+            ) : (
+              <div className="pd-stars"><span className="rv">No reviews yet</span></div>
+            )}
             <div className="pd-price-row">
               <span className="pd-price">{fmt(p.price)}</span>
               <span className="pd-oprice">{fmt(p.originalPrice)}</span>
               <span className="pd-disc">{disc(p.price, p.originalPrice)}% off</span>
             </div>
-            <div className="pd-gi">🏷️ GI-Tagged · Karimnagar, Telangana</div>
+            <div className="pd-gi">🏷️ Authentic Craft · Karimnagar, Telangana</div>
             {viewers !== null && (
               <div className="viewer-badge">
                 <span className="viewer-dot"/>
@@ -686,18 +695,18 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
 
             <div className="qty-row" ref={atcRef}>
               <div className="qty-ctrl">
-                <button onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
+                <button disabled={p.comingSoon} onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
                 <span>{qty}</span>
-                <button onClick={() => setQty(q => Math.min(p.stock || 10, q + 1))}>+</button>
+                <button disabled={p.comingSoon} onClick={() => setQty(q => Math.min(p.stock || 10, q + 1))}>+</button>
               </div>
-              <button className="pd-add" disabled={p.stock === 0} onClick={handleAdd}>
-                {p.stock === 0 ? "Sold Out" : "Add to Cart"}
+              <button className="pd-add" disabled={p.comingSoon || p.stock === 0} onClick={handleAdd}>
+                {p.comingSoon ? "Coming Soon" : p.stock === 0 ? "Sold Out" : "Add to Cart"}
               </button>
               <button className="pd-wish" title="Add to wishlist">♡</button>
             </div>
 
             {/* Estimated delivery */}
-            {p.stock !== 0 && (
+            {p.stock !== 0 && !p.comingSoon && (
               <div className="pd-delivery">
                 <div className="pd-delivery-hd">📦 Estimated Delivery</div>
                 <div className="pd-del-row">
@@ -773,7 +782,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
                   </div>
                 </>
               ) : <p style={{color:"var(--mt)"}}>No size guide available for this product.</p>}
-              <p style={{marginTop:14,color:"var(--mt)",fontSize:".85rem"}}>🌿 <strong>Care:</strong> Follow washing instructions on the label. Store in a cool dry place.</p>
+              <p style={{marginTop:14,color:"var(--mt)",fontSize:".85rem"}}>🌿 <strong>Care:</strong> {p.specs?.find(s => s.key === "Care")?.val || "Follow washing instructions on the label. Store in a cool dry place."}</p>
             </div>
           )}
           {tab === "rev" && (
@@ -782,7 +791,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
         </div>
       </div>
 
-      {stickyVisible && p.stock !== 0 && (
+      {stickyVisible && p.stock !== 0 && !p.comingSoon && (
         <div className="sticky-atc">
           <div className="sticky-atc-info">
             <div className="sticky-atc-name">{p.name}</div>

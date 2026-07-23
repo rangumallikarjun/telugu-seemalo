@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey:            process.env.REACT_APP_FIREBASE_API_KEY,
@@ -15,10 +14,3 @@ const firebaseConfig = {
 export const app  = initializeApp(firebaseConfig);
 export const db   = getFirestore(app);
 export const auth = getAuth(app);
-
-if (process.env.REACT_APP_RECAPTCHA_SITE_KEY && process.env.NODE_ENV === "production") {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
-    isTokenAutoRefreshEnabled: true,
-  });
-}

@@ -16,8 +16,12 @@ import AdminPage from "./pages/AdminPage";
 import TrackOrderPage from "./pages/TrackOrderPage";
 import ContactPage from "./pages/ContactPage";
 import RoomBuilderPage from "./pages/RoomBuilderPage";
+import PolicyPage, { DEFAULT_TERMS_ITEMS, DEFAULT_SHIPPING_ITEMS, DEFAULT_RETURN_ITEMS } from "./pages/PolicyPage";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "./firebase/config";
 import { onAuthChange } from "./firebase/authService";
 import { getProducts } from "./firebase/productService";
+import logo from "./assets/logo-original.png";
 import CookieBanner from "./components/CookieBanner";
 import AnnouncementBar from "./components/AnnouncementBar";
 import ScrollProgress from "./components/ScrollProgress";
@@ -55,6 +59,51 @@ export default function App() {
   const [products, setProducts]     = useState([]);
 
   useEffect(() => { getProducts().then(setProducts); }, []);
+
+  // Apply admin-configured SEO settings to the document head
+  useEffect(() => {
+    getDoc(doc(db, "settings", "seo")).then(snap => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      if (data.siteTitle) document.title = data.siteTitle;
+      if (data.metaDescription) {
+        let tag = document.querySelector('meta[name="description"]');
+        if (!tag) {
+          tag = document.createElement("meta");
+          tag.setAttribute("name", "description");
+          document.head.appendChild(tag);
+        }
+        tag.setAttribute("content", data.metaDescription);
+      }
+      if (data.focusKeywords) {
+        let tag = document.querySelector('meta[name="keywords"]');
+        if (!tag) {
+          tag = document.createElement("meta");
+          tag.setAttribute("name", "keywords");
+          document.head.appendChild(tag);
+        }
+        tag.setAttribute("content", data.focusKeywords);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Room Builder can be toggled off from Admin → Settings
+  const [roomBuilderEnabled, setRoomBuilderEnabled] = useState(true);
+  useEffect(() => {
+    getDoc(doc(db, "settings", "store")).then(snap => {
+      if (snap.exists() && snap.data().roomBuilderEnabled === false) setRoomBuilderEnabled(false);
+    }).catch(() => {});
+  }, []);
+
+  // Hide the Tawk.to support widget while the cart drawer or checkout page is open
+  useEffect(() => {
+    const shouldHide = cartOpen || page === "checkout";
+    const apply = () => { shouldHide ? window.Tawk_API?.hideWidget?.() : window.Tawk_API?.showWidget?.(); };
+    apply();
+    // In case Tawk's script hasn't finished loading yet, re-apply once it's ready
+    window.Tawk_API = window.Tawk_API || {};
+    window.Tawk_API.onLoad = apply;
+  }, [cartOpen, page]);
 
   useEffect(() => {
     const unsub = onAuthChange(userData => {
@@ -99,6 +148,10 @@ export default function App() {
     setPageState(p);
     if (!opts.noScroll) window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (page === "room" && !roomBuilderEnabled) navigate("home", { replace: true });
+  }, [page, roomBuilderEnabled, navigate]);
 
   const showToast = (msg, type = "ok") => {
     setToast({ msg, type });
@@ -165,6 +218,8 @@ export default function App() {
           <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}} @keyframes ld-pulse{0%,100%{opacity:1}50%{opacity:.35}}`}</style>
 
           {/* Brand logo */}
+          <img src={logo} alt="Telugu Seemalo" className="splash-logo logo-mark" />
+
           <div style={{
             fontFamily:"'Cormorant Garamond',serif",
             fontSize:"clamp(2.2rem,6vw,3.2rem)",
@@ -181,7 +236,7 @@ export default function App() {
             letterSpacing:".14em", textTransform:"uppercase",
             color:"#6B4C38",
           }}>
-            GI-Tagged · Authentic Craft
+            Authentic Craft
           </div>
 
           {/* Dot loader */}
@@ -222,6 +277,7 @@ export default function App() {
         setCartOpen={setCartOpen}
         user={user}
         setAuthMode={setAuthMode}
+        roomBuilderEnabled={roomBuilderEnabled}
       />
 
       {page === "home"     && <HomePage setPage={navigate} onOpen={openProduct} onAdd={addToCart}/>}
@@ -230,10 +286,13 @@ export default function App() {
       {page === "about"    && <AboutPage setPage={navigate}/>}
       {page === "checkout" && <CheckoutPage cart={cart} setPage={navigate} setCart={setCart} setLastOrder={setLastOrder} user={user}/>}
       {page === "success"  && <SuccessPage order={lastOrder} setPage={navigate}/>}
-      {page === "profile"  && <ProfilePage user={user} setUser={setUser} setPage={navigate} products={products} onOpen={openProduct}/>}
+      {page === "profile"  && <ProfilePage user={user} setUser={setUser} setPage={navigate} products={products} onOpen={openProduct} roomBuilderEnabled={roomBuilderEnabled}/>}
       {page === "track"    && <TrackOrderPage user={user} setPage={navigate}/>}
       {page === "contact"  && <ContactPage setPage={navigate} user={user}/>}
       {page === "room"     && <RoomBuilderPage products={products} setPage={navigate} addToCart={addToCart} user={user}/>}
+      {page === "terms"    && <PolicyPage docId="termsPolicy" title="Terms & Conditions" subtitle="Please read these terms carefully before using our site or placing an order." defaultItems={DEFAULT_TERMS_ITEMS}/>}
+      {page === "shipping-policy" && <PolicyPage docId="shippingPolicy" title="Shipping Policy" subtitle="Everything you need to know about how we ship your order." defaultItems={DEFAULT_SHIPPING_ITEMS}/>}
+      {page === "return-policy"   && <PolicyPage docId="returnPolicy" title="Return Policy" subtitle="Our process for returns, exchanges, and refunds." defaultItems={DEFAULT_RETURN_ITEMS}/>}
 
       <CartDrawer cart={cart} open={cartOpen} onClose={() => setCartOpen(false)} onQty={updateQty} onRemove={removeFromCart} setPage={navigate}/>
       <AuthModal mode={authMode} setMode={setAuthMode} onAuth={handleAuth}/>

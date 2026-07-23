@@ -3,12 +3,12 @@ import { getDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 const DEFAULT_ITEMS = [
-  "🏅 GI-Tagged Authentic Art",
+  "🏅 Authentic Handcrafted Art",
   "🚚 Free Delivery above ₹999",
   "⭐ 5,000+ Happy Customers",
   "🎁 Gift Wrapping Available",
   "↩ Easy 7-Day Returns",
-  "🏆 Government of India Certified",
+  "🏆 Trusted Since 2020",
   "👨‍🎨 48 Artisan Families",
   "🌿 300+ Years of Heritage",
 ];

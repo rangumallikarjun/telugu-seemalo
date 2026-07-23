@@ -206,6 +206,7 @@ export default function AdminSupport() {
   const open = (t) => { setSelId(t.id); setReply(""); setNotes(t.adminNotes || ""); };
 
   const handleStatusChange = async (status) => {
+    if (!window.confirm(`Change this ticket's status to "${status}"?`)) return;
     await updateTicket(sel.id, { status });
     if ((status === "resolved" || status === "closed") && sel.email) {
       const tid = sel.ticketId || sel.id;
@@ -237,6 +238,7 @@ export default function AdminSupport() {
 
   const handleReply = async () => {
     if (!reply.trim() || sending) return;
+    if (!window.confirm("Send this reply to the customer? An email will be sent.")) return;
     setSending(true);
     const msg = {
       id: Date.now().toString(36),

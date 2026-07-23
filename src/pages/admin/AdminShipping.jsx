@@ -122,6 +122,7 @@ export default function AdminShipping() {
   };
 
   const handleSave = async () => {
+    if (!window.confirm("Save changes to shipping settings? This will update live checkout rates.")) return;
     await setDoc(doc(db, "settings", "shipping"), form);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);

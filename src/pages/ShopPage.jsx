@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getProducts } from "../firebase/productService";
 import { CATS } from "../data/products";
 import ProductCard from "../components/ProductCard";
-import { fmt } from "../utils/helpers";
+import { fmt, NoImageIcon } from "../utils/helpers";
 import { getRecentlyViewed } from "../utils/recentlyViewed";
 
 const PER_PAGE = 30;
@@ -17,6 +17,13 @@ export default function ShopPage({ onOpen, onAdd }) {
 
   useEffect(() => {
     getProducts().then(p => { setProducts(p); setLoading(false); });
+  }, []);
+
+  // Search queries fired from the nav bar's search box
+  useEffect(() => {
+    const onSearch = (e) => setQ(e.detail || "");
+    window.addEventListener("ts-shop-search", onSearch);
+    return () => window.removeEventListener("ts-shop-search", onSearch);
   }, []);
 
   // Reset to page 1 whenever filter/search/category changes
@@ -42,11 +49,12 @@ export default function ShopPage({ onOpen, onAdd }) {
   const goPage = (n) => { setPage(n); scrollToTop(); };
 
   return (
+    <div className="shop-page-bg">
     <div className="sec">
       <div className="sec-hd">
         <h2>Our Collection</h2>
         <div className="divider" />
-        <p>Authentic GI-Tagged Cheriyal crafts from Karimnagar, Telangana</p>
+        <p>Authentic Cheriyal crafts from Karimnagar, Telangana</p>
       </div>
       <div style={{ maxWidth: 440, margin: "0 auto 24px" }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search products…"
@@ -131,7 +139,7 @@ export default function ShopPage({ onOpen, onAdd }) {
             {recentProducts.map(p => (
               <div key={p.id} className="rv-card" onClick={() => onOpen(p)}>
                 <div className="rv-img">
-                  {p.images?.[0] ? <img src={p.images[0]} alt={p.name} /> : p.emoji}
+                  {p.images?.[0] ? <img src={p.images[0]} alt={p.name} /> : <NoImageIcon/>}
                 </div>
                 <div className="rv-info">
                   <div className="rv-name">{p.name}</div>
@@ -142,6 +150,7 @@ export default function ShopPage({ onOpen, onAdd }) {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
