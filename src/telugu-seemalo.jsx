@@ -139,7 +139,7 @@ export default function App() {
     window.history.replaceState(
       { page: pathToPage(window.location.pathname) },
       "",
-      window.location.pathname
+      window.location.pathname + window.location.search
     );
   }, []);
 
