@@ -49,6 +49,9 @@ export const uploadHeroSlideImage = (file, onProgress) =>
 export const uploadStoryChapterImage = (file, onProgress) =>
   uploadToCloudinary(file, "image", onProgress);
 
+export const uploadAboutImage = (file, onProgress) =>
+  uploadToCloudinary(file, "image", onProgress);
+
 // Cloudinary unsigned uploads can't be deleted client-side (requires API secret).
 // Files are retained in your Cloudinary media library — manage deletions from the dashboard.
 export const deleteFileByUrl = async (_url) => {};

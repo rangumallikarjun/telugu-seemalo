@@ -5,6 +5,7 @@ const LINKS = [
   { id: "reports",   icon: "📈", label: "Reports" },
   { id: "orders",    icon: "📦", label: "Orders" },
   { id: "products",  icon: "🏺", label: "Products" },
+  { id: "about",     icon: "📜", label: "About Page" },
   { id: "customers", icon: "👥", label: "Customers" },
   { id: "reviews",   icon: "⭐", label: "Reviews" },
   { id: "support",   icon: "💬", label: "Support" },

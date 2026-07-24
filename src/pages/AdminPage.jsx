@@ -4,6 +4,7 @@ import AdminSidebar from "../components/AdminSidebar";
 import AdminDashboard from "./admin/AdminDashboard";
 import AdminReports from "./admin/AdminReports";
 import AdminProducts from "./admin/AdminProducts";
+import AdminAbout from "./admin/AdminAbout";
 import AdminOrders from "./admin/AdminOrders";
 import AdminCustomers from "./admin/AdminCustomers";
 import AdminCoupons from "./admin/AdminCoupons";
@@ -20,6 +21,7 @@ const TAB_TITLES = {
   reports:   "Reports",
   orders:    "Orders",
   products:  "Products",
+  about:     "About Page",
   customers: "Customers",
   reviews:   "Reviews",
   support:       "Support Tickets",
@@ -65,6 +67,7 @@ export default function AdminPage({user, setUser, setPage}) {
           {tab === "reports"   && <AdminReports/>}
           {tab === "orders"    && <AdminOrders/>}
           {tab === "products"  && <AdminProducts/>}
+          {tab === "about"     && <AdminAbout/>}
           {tab === "customers" && <AdminCustomers/>}
           {tab === "reviews"   && <AdminReviews/>}
           {tab === "support"        && <AdminSupport/>}
