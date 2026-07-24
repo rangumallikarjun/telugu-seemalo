@@ -457,6 +457,8 @@ export default function AdminProducts() {
   const [modal, setModal]       = useState(null);
   const [search, setSearch]     = useState("");
   const [catFilter, setCatFilter] = useState("All");
+  const [dragIndex, setDragIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
   const load = () => getProducts().then(p => { setProducts(p); setLoading(false); });
   useEffect(() => { load(); }, []);
@@ -490,6 +492,27 @@ export default function AdminProducts() {
       updateProduct(a.docId, { sortOrder: bOrder }),
       updateProduct(b.docId, { sortOrder: aOrder }),
     ]);
+    load();
+  };
+
+  const handleReorderDrop = async (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    const orderOf = p => p.sortOrder ?? p.id;
+    const reordered = [...filtered];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    // Only re-stamp the moved item, slotting it between its new neighbours' existing
+    // order values — touching every visible row would corrupt order for products
+    // hidden by the current search/category filter.
+    const newIndex = reordered.indexOf(moved);
+    const prev = reordered[newIndex - 1];
+    const next = reordered[newIndex + 1];
+    let newOrder;
+    if (prev && next) newOrder = (orderOf(prev) + orderOf(next)) / 2;
+    else if (prev) newOrder = orderOf(prev) + 1;
+    else if (next) newOrder = orderOf(next) - 1;
+    else return;
+    await updateProduct(moved.docId, { sortOrder: newOrder });
     load();
   };
 
@@ -529,9 +552,19 @@ export default function AdminProducts() {
             </thead>
             <tbody>
               {filtered.map((p, i) => (
-                <tr key={p.docId}>
-                  <td>
-                    <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                <tr key={p.docId}
+                  draggable
+                  onDragStart={() => setDragIndex(i)}
+                  onDragOver={e => { e.preventDefault(); if (dragOverIndex !== i) setDragOverIndex(i); }}
+                  onDrop={() => { if (dragIndex !== null) handleReorderDrop(dragIndex, i); setDragIndex(null); setDragOverIndex(null); }}
+                  onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
+                  style={{
+                    opacity: dragIndex === i ? .4 : 1,
+                    borderTop: dragOverIndex === i && dragIndex !== i ? "2px solid #E8620A" : undefined,
+                  }}>
+                  <td style={{cursor:"grab"}} title="Drag to reorder">
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                      <span style={{color:"#C9A96E",fontSize:".85rem",lineHeight:1}}>⠿</span>
                       <button className="admin-btn-icon" title="Move up" disabled={i === 0}
                         style={{padding:"2px 6px",fontSize:".7rem",opacity: i === 0 ? .35 : 1}}
                         onClick={() => handleMove(i, -1)}>↑</button>
