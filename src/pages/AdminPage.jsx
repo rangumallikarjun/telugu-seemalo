@@ -5,6 +5,7 @@ import AdminDashboard from "./admin/AdminDashboard";
 import AdminReports from "./admin/AdminReports";
 import AdminProducts from "./admin/AdminProducts";
 import AdminAbout from "./admin/AdminAbout";
+import AdminHomepage from "./admin/AdminHomepage";
 import AdminOrders from "./admin/AdminOrders";
 import AdminCustomers from "./admin/AdminCustomers";
 import AdminCoupons from "./admin/AdminCoupons";
@@ -21,6 +22,7 @@ const TAB_TITLES = {
   reports:   "Reports",
   orders:    "Orders",
   products:  "Products",
+  homepage:  "Homepage",
   about:     "About Page",
   customers: "Customers",
   reviews:   "Reviews",
@@ -67,6 +69,7 @@ export default function AdminPage({user, setUser, setPage}) {
           {tab === "reports"   && <AdminReports/>}
           {tab === "orders"    && <AdminOrders/>}
           {tab === "products"  && <AdminProducts/>}
+          {tab === "homepage"  && <AdminHomepage/>}
           {tab === "about"     && <AdminAbout/>}
           {tab === "customers" && <AdminCustomers/>}
           {tab === "reviews"   && <AdminReviews/>}
