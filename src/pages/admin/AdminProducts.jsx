@@ -44,6 +44,87 @@ function StringList({ label, items, onChange }) {
   );
 }
 
+// ── Size list (per-size price & photo overrides) ─────────────────────────────
+function SizeList({ sizes, allImages, onChange }) {
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [originalPrice, setOriginalPrice] = useState("");
+  const [expanded, setExpanded] = useState(null);
+
+  const add = () => {
+    if (!name.trim()) return;
+    onChange([...sizes, { name: name.trim(), price: price.trim(), originalPrice: originalPrice.trim(), images: [] }]);
+    setName(""); setPrice(""); setOriginalPrice("");
+  };
+  const remove = (i) => onChange(sizes.filter((_, idx) => idx !== i));
+  const update = (i, patch) => onChange(sizes.map((s, idx) => idx === i ? { ...s, ...patch } : s));
+  const toggleImage = (i, url) => {
+    const cur = sizes[i].images || [];
+    const next = cur.includes(url) ? cur.filter(u => u !== url) : [...cur, url];
+    update(i, { images: next });
+  };
+
+  return (
+    <div className="admin-inp-grp">
+      <label>Sizes</label>
+      <div style={{fontSize:".75rem",color:"#6B4C38",marginBottom:8}}>
+        Leave price / MRP blank to use the product's base price for that size.
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+        {sizes.map((s, i) => (
+          <div key={i} style={{background:"#F4EDE5",borderRadius:8,padding:"6px 10px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontWeight:700,minWidth:60,color:"#2D1E12"}}>{s.name}</span>
+              <input type="number" value={s.price ?? ""} onChange={e => update(i, { price: e.target.value })}
+                placeholder="Price override"
+                style={{width:110,padding:"5px 8px",border:"1.5px solid #E8D5C0",borderRadius:6,fontSize:".8rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+              <input type="number" value={s.originalPrice ?? ""} onChange={e => update(i, { originalPrice: e.target.value })}
+                placeholder="MRP override"
+                style={{width:110,padding:"5px 8px",border:"1.5px solid #E8D5C0",borderRadius:6,fontSize:".8rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+              {allImages.length > 0 && (
+                <button type="button" onClick={() => setExpanded(expanded === i ? null : i)}
+                  style={{background:"none",border:"1.5px solid #D8C4A8",borderRadius:6,cursor:"pointer",color:"#6B4C38",fontSize:".72rem",padding:"3px 8px"}}>
+                  {(s.images || []).length > 0 ? `🖼️ ${s.images.length} photo${s.images.length>1?"s":""}` : "🖼️ Link photos"}
+                </button>
+              )}
+              <button type="button" onClick={() => remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"#C0392B",fontWeight:700,marginLeft:"auto"}}>×</button>
+            </div>
+            {expanded === i && allImages.length > 0 && (
+              <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #E8D5C0"}}>
+                <div style={{fontSize:".72rem",color:"#6B4C38",marginBottom:6}}>
+                  Select which photos show when a customer picks this size (leave none selected to use colour/default photos):
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {allImages.map((url, ui) => {
+                    const on = (s.images || []).includes(url);
+                    return (
+                      <button key={ui} type="button" onClick={() => toggleImage(i, url)}
+                        style={{position:"relative",width:52,height:52,borderRadius:6,padding:0,cursor:"pointer",
+                          border: on ? "2.5px solid #E8620A" : "1.5px solid #D8C4A8",overflow:"hidden"}}>
+                        <img src={url} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                        {on && <div style={{position:"absolute",inset:0,background:"rgba(232,98,10,.28)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900}}>✓</div>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Size name (e.g. King)"
+          style={{width:140,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+        <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="Price (optional)"
+          style={{width:130,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+        <input type="number" value={originalPrice} onChange={e => setOriginalPrice(e.target.value)} placeholder="MRP (optional)"
+          style={{width:130,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+        <button type="button" onClick={add} className="admin-btn admin-btn-outline admin-btn-sm">+ Add</button>
+      </div>
+    </div>
+  );
+}
+
 // ── Color list ────────────────────────────────────────────────────────────────
 function ColorList({ colors, allImages, onChange }) {
   const [name, setName] = useState("");
@@ -300,7 +381,10 @@ function VideoUploader({ video, productId, onChange }) {
 
 // ── Product Modal ─────────────────────────────────────────────────────────────
 function ProductModal({ product, onSave, onClose, categories }) {
-  const [form, setForm]   = useState(product ? { ...product } : { ...EMPTY, id: Date.now() });
+  const [form, setForm] = useState(() => {
+    const base = product ? { ...product } : { ...EMPTY, id: Date.now() };
+    return { ...base, sizes: (base.sizes || []).map(s => (typeof s === "string" ? { name: s, price: "", originalPrice: "", images: [] } : s)) };
+  });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -312,7 +396,13 @@ function ProductModal({ product, onSave, onClose, categories }) {
     setError("");
     setSaving(true);
     try {
-      await onSave({ ...form, price: +form.price, originalPrice: +form.originalPrice, stock: +form.stock });
+      const sizes = (form.sizes || []).map(s => ({
+        name: s.name,
+        price: s.price !== "" && s.price != null ? +s.price : "",
+        originalPrice: s.originalPrice !== "" && s.originalPrice != null ? +s.originalPrice : "",
+        images: s.images || [],
+      }));
+      await onSave({ ...form, sizes, price: +form.price, originalPrice: +form.originalPrice, stock: +form.stock });
     } finally {
       setSaving(false);
     }
@@ -383,7 +473,7 @@ function ProductModal({ product, onSave, onClose, categories }) {
         <MediaUploader images={form.images || []} productId={form.id} onChange={v => set("images", v)}/>
         <VideoUploader video={form.video || ""} productId={form.id} onChange={v => set("video", v)}/>
 
-        <StringList label="Sizes" items={form.sizes || []} onChange={v => set("sizes", v)}/>
+        <SizeList sizes={form.sizes || []} allImages={form.images || []} onChange={v => set("sizes", v)}/>
         <ColorList colors={form.colors || []} allImages={form.images || []} onChange={v => set("colors", v)}/>
         <StringList label="Features" items={form.features || []} onChange={v => set("features", v)}/>
         <SpecsList specs={form.specs || []} onChange={v => set("specs", v)}/>

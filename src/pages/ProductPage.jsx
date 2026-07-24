@@ -524,8 +524,11 @@ function MediaSlider({ images = [], video = "" }) {
 }
 
 // ── Main ProductPage ──────────────────────────────────────────────────────────
+const sizeName = (s) => (typeof s === "string" ? s : s?.name);
+
 export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
-  const [sz, setSz] = useState(p.sizes?.[0]);
+  const sizeList = (p.sizes || []).map(s => (typeof s === "string" ? { name: s } : s));
+  const [sz, setSz] = useState(sizeName(p.sizes?.[0]));
   const [clr, setClr] = useState(p.colors?.[0]);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState("desc");
@@ -538,7 +541,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
   const atcRef = useRef(null);
 
   useEffect(() => {
-    setSz(p.sizes?.[0]);
+    setSz(sizeName(p.sizes?.[0]));
     setClr(p.colors?.[0]);
     setQty(1);
     setTab("desc");
@@ -591,6 +594,11 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
     return () => obs.disconnect();
   }, []);
 
+  const szVariant = sizeList.find(s => s.name === sz);
+  const activePrice = szVariant?.price !== undefined && szVariant.price !== "" ? +szVariant.price : p.price;
+  const activeOriginalPrice = szVariant?.originalPrice !== undefined && szVariant.originalPrice !== "" ? +szVariant.originalPrice : p.originalPrice;
+  const galleryImages = clr?.images?.length > 0 ? clr.images : (szVariant?.images?.length > 0 ? szVariant.images : p.images);
+
   const shareUrl = `${window.location.origin}/product?id=${p.id}`;
 
   const handleCopy = () => {
@@ -601,7 +609,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
   };
 
   const handleWhatsApp = () => {
-    const text = `🏺 *${p.name}* — ${fmt(p.price)} (${disc(p.price, p.originalPrice)}% off!)\n\n${p.description?.slice(0, 100) || ""}…\n\n🔗 ${shareUrl}`;
+    const text = `🏺 *${p.name}* — ${fmt(activePrice)} (${disc(activePrice, activeOriginalPrice)}% off!)\n\n${p.description?.slice(0, 100) || ""}…\n\n🔗 ${shareUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -609,7 +617,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
   const [stdMin, stdMax] = parseRange(shipCfg.standardDays);
   const [expMin, expMax] = parseRange(shipCfg.expressDays);
 
-  const handleAdd = () => onAdd({ ...p, selSize: sz, selColor: clr?.name }, qty);
+  const handleAdd = () => onAdd({ ...p, price: activePrice, originalPrice: activeOriginalPrice, selSize: sz, selColor: clr?.name }, qty);
 
   return (
     <div>
@@ -617,7 +625,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
         <button className="pd-back" onClick={onBack}>← Back to Shop</button>
         <div className="pd-grid">
 
-          <MediaSlider key={clr?.name || "default"} images={clr?.images?.length > 0 ? clr.images : p.images} video={p.video}/>
+          <MediaSlider key={`${clr?.name || "c"}|${szVariant?.images?.length ? sz : "s"}`} images={galleryImages} video={p.video}/>
 
           <div className="pd-info">
             <div className="pd-cat">{p.category}</div>
@@ -633,9 +641,9 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
               <div className="pd-stars"><span className="rv">No reviews yet</span></div>
             )}
             <div className="pd-price-row">
-              <span className="pd-price">{fmt(p.price)}</span>
-              <span className="pd-oprice">{fmt(p.originalPrice)}</span>
-              <span className="pd-disc">{disc(p.price, p.originalPrice)}% off</span>
+              <span className="pd-price">{fmt(activePrice)}</span>
+              <span className="pd-oprice">{fmt(activeOriginalPrice)}</span>
+              <span className="pd-disc">{disc(activePrice, activeOriginalPrice)}% off</span>
             </div>
             <div className="pd-gi">🏷️ Authentic Craft · Karimnagar, Telangana</div>
             {viewers !== null && (
@@ -646,12 +654,12 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
             )}
             <p className="pd-desc">{p.description}</p>
 
-            {p.sizes?.length > 0 && (
+            {sizeList.length > 0 && (
               <>
                 <div className="pd-label">Size <span style={{fontWeight:400,color:"var(--mt)",textTransform:"none",letterSpacing:0}}>— {sz}</span></div>
                 <div className="sz-row">
-                  {p.sizes.map(s => (
-                    <button key={s} className={`pd-sz ${sz === s ? "act" : ""}`} onClick={() => setSz(s)}>{s}</button>
+                  {sizeList.map(s => (
+                    <button key={s.name} className={`pd-sz ${sz === s.name ? "act" : ""}`} onClick={() => setSz(s.name)}>{s.name}</button>
                   ))}
                 </div>
 
