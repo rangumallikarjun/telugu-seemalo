@@ -48,7 +48,12 @@ function StringList({ label, items, onChange }) {
 function ColorList({ colors, onChange }) {
   const [name, setName] = useState("");
   const [hex, setHex]   = useState("#E8620A");
-  const add = () => { if (!name.trim()) return; onChange([...colors, { name: name.trim(), hex }]); setName(""); setHex("#E8620A"); };
+  const add = () => {
+    if (!name.trim()) return;
+    const cleanHex = "#" + hex.replace(/^#/, "").trim();
+    onChange([...colors, { name: name.trim(), hex: cleanHex }]);
+    setName(""); setHex("#E8620A");
+  };
   const remove = (i) => onChange(colors.filter((_, idx) => idx !== i));
   return (
     <div className="admin-inp-grp">
@@ -66,8 +71,10 @@ function ColorList({ colors, onChange }) {
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Colour name…"
           style={{flex:1,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
-        <input type="color" value={hex} onChange={e => setHex(e.target.value)}
-          style={{width:40,height:34,border:"1.5px solid #E8D5C0",borderRadius:7,cursor:"pointer",padding:2}}/>
+        <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(hex) ? hex : "#E8620A"} onChange={e => setHex(e.target.value)}
+          style={{width:40,height:34,border:"1.5px solid #E8D5C0",borderRadius:7,cursor:"pointer",padding:2,flexShrink:0}}/>
+        <input value={hex} onChange={e => setHex(e.target.value)} placeholder="#E8620A" maxLength={7}
+          style={{width:88,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".85rem",fontFamily:"monospace",outline:"none",textTransform:"lowercase"}}/>
         <button type="button" onClick={add} className="admin-btn admin-btn-outline admin-btn-sm">+ Add</button>
       </div>
     </div>
