@@ -452,7 +452,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:820,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>SEO Settings</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Search Engine Optimization</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Search Engine Optimization</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -502,7 +505,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:820,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Google Analytics</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Track visitors with GA4</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Track visitors with GA4</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -728,7 +734,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:900,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Hero Slides</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Homepage hero carousel</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Homepage hero carousel</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -913,7 +922,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:700,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Trust Strip</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Icon row below the hero</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Icon row below the hero</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -973,7 +985,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:700,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Stats Counter</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Animated count-up numbers below the marquee</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Animated count-up numbers below the marquee</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -1036,7 +1051,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:900,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Our Story Chapters</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Sticky-scroll narrative section on the homepage</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Sticky-scroll narrative section on the homepage</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -1162,7 +1180,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:700,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Shop by Category</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Category tiles on the homepage</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Category tiles on the homepage</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -1205,7 +1226,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:700,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Social Media Links</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Icon row in the footer</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Icon row in the footer</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -1251,22 +1275,25 @@ export default function AdminSettings() {
 
       {/* ── Policy Pages ──────────────────────────────────────────────── */}
       <PolicyListEditor title="Terms & Conditions" subtitle="Public page: /terms"
-        items={terms.items} handlers={termsH} saved={termsSaved}
+        items={terms.items} handlers={termsH} saved={termsSaved} onRefresh={load}
         onSave={() => savePolicy("termsPolicy", terms, setTermsSaved, "Terms & Conditions")}/>
 
       <PolicyListEditor title="Shipping Policy" subtitle="Public page: /shipping-policy"
-        items={shippingPolicy.items} handlers={shipPolH} saved={shippingPolicySaved}
+        items={shippingPolicy.items} handlers={shipPolH} saved={shippingPolicySaved} onRefresh={load}
         onSave={() => savePolicy("shippingPolicy", shippingPolicy, setShippingPolicySaved, "Shipping Policy")}/>
 
       <PolicyListEditor title="Return Policy" subtitle="Public page: /return-policy"
-        items={returnPolicy.items} handlers={retPolH} saved={returnPolicySaved}
+        items={returnPolicy.items} handlers={retPolH} saved={returnPolicySaved} onRefresh={load}
         onSave={() => savePolicy("returnPolicy", returnPolicy, setReturnPolicySaved, "Return Policy")}/>
 
       {/* ── Contact Page — Response Times ────────────────────────────────── */}
       <div className="admin-card" style={{maxWidth:700,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Response Times</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Shown on the Contact page</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Shown on the Contact page</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
           <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
@@ -1306,7 +1333,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:700,marginBottom:20}}>
         <div className="admin-card-hd">
           <h3>Marquee Strip</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Scrolling ticker below the hero</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Scrolling ticker below the hero</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"8px 0 20px"}}>
 
@@ -1410,7 +1440,10 @@ export default function AdminSettings() {
       <div className="admin-card" style={{maxWidth:700}}>
         <div className="admin-card-hd">
           <h3>Tax Settings</h3>
-          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Applied live at checkout</span>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Applied live at checkout</span>
+            <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
+          </div>
         </div>
         <div style={{padding:"12px 0 20px"}}>
 
@@ -1542,12 +1575,15 @@ export default function AdminSettings() {
   );
 }
 
-function PolicyListEditor({ title, subtitle, items, handlers, onSave, saved }) {
+function PolicyListEditor({ title, subtitle, items, handlers, onSave, saved, onRefresh }) {
   return (
     <div className="admin-card" style={{maxWidth:820,marginBottom:20}}>
       <div className="admin-card-hd">
         <h3>{title} <span style={{fontWeight:500,fontSize:".78rem",color:"#9B8472",textTransform:"none",letterSpacing:0}}>({items.length} items)</span></h3>
-        <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>{subtitle}</span>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>{subtitle}</span>
+          <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={onRefresh}>↺ Refresh</button>
+        </div>
       </div>
       <div style={{padding:"8px 0 20px"}}>
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
