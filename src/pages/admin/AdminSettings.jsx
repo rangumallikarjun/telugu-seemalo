@@ -103,6 +103,11 @@ const SEO_DEFAULTS = {
   focusKeywords: "Cheriyal lacquer art, Telangana handicrafts, handcrafted home decor, Karimnagar artisans, lacquer wall clocks, hand-painted pots",
 };
 
+const ANALYTICS_DEFAULTS = {
+  enabled: false,
+  gaId: "",
+};
+
 const blankStoryChapter = () => ({
   eyebrow: "New Chapter",
   title: ["New", "Chapter"],
@@ -163,6 +168,8 @@ export default function AdminSettings() {
   const [seoSaved, setSeoSaved] = useState(false);
   const [responseTimes, setResponseTimes] = useState(RESPONSE_TIMES_DEFAULTS);
   const [responseTimesSaved, setResponseTimesSaved] = useState(false);
+  const [analytics, setAnalytics] = useState(ANALYTICS_DEFAULTS);
+  const [analyticsSaved, setAnalyticsSaved] = useState(false);
   const heroCrop  = useCropUpload(uploadHeroSlideImage, 16 / 9);
   const storyCrop = useCropUpload(uploadStoryChapterImage, 1);
 
@@ -183,7 +190,8 @@ export default function AdminSettings() {
       getDoc(doc(db, "settings", "returnPolicy")),
       getDoc(doc(db, "settings", "seo")),
       getDoc(doc(db, "settings", "responseTimes")),
-    ]).then(([storeSnap, taxSnap, mqSnap, heroSnap, trustSnap, statsSnap, storySnap, categorySnap, socialSnap, termsSnap, shipPolSnap, retPolSnap, seoSnap, responseTimesSnap]) => {
+      getDoc(doc(db, "settings", "analytics")),
+    ]).then(([storeSnap, taxSnap, mqSnap, heroSnap, trustSnap, statsSnap, storySnap, categorySnap, socialSnap, termsSnap, shipPolSnap, retPolSnap, seoSnap, responseTimesSnap, analyticsSnap]) => {
       if (storeSnap.exists()) setForm({ ...STORE_DEFAULTS, ...storeSnap.data() });
       if (taxSnap.exists())   setTax({ ...TAX_DEFAULTS, ...taxSnap.data() });
       if (mqSnap.exists())    setMq({ ...MQ_DEFAULTS, ...mqSnap.data() });
@@ -232,6 +240,7 @@ export default function AdminSettings() {
         const data = responseTimesSnap.data();
         setResponseTimes({ items: data.items?.length ? data.items : RESPONSE_TIMES_DEFAULTS.items });
       }
+      if (analyticsSnap.exists()) setAnalytics({ ...ANALYTICS_DEFAULTS, ...analyticsSnap.data() });
       setLoading(false);
     });
   };
@@ -246,6 +255,17 @@ export default function AdminSettings() {
     await setDoc(doc(db, "settings", "seo"), seo);
     setSeoSaved(true);
     setTimeout(() => setSeoSaved(false), 2500);
+  };
+
+  const handleSaveAnalytics = async () => {
+    if (analytics.enabled && !/^G-[A-Z0-9]+$/i.test(analytics.gaId.trim())) {
+      alert('Measurement ID should look like "G-XXXXXXXXXX". Double-check it from Google Analytics → Admin → Data Streams.');
+      return;
+    }
+    if (!window.confirm("Save Google Analytics settings? This will update the live site.")) return;
+    await setDoc(doc(db, "settings", "analytics"), analytics);
+    setAnalyticsSaved(true);
+    setTimeout(() => setAnalyticsSaved(false), 2500);
   };
 
   const handleSaveStore = async () => {
@@ -474,6 +494,47 @@ export default function AdminSettings() {
           <div style={{display:"flex",gap:12,alignItems:"center"}}>
             <button className="admin-btn admin-btn-primary" onClick={handleSaveSeo}>Save SEO</button>
             {seoSaved && <span style={{color:"#2D7D46",fontSize:".88rem",fontWeight:600}}>✓ Saved!</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Google Analytics ──────────────────────────────────────────── */}
+      <div className="admin-card" style={{maxWidth:820,marginBottom:20}}>
+        <div className="admin-card-hd">
+          <h3>Google Analytics</h3>
+          <span style={{fontSize:".78rem",color:"#6B4C38",fontWeight:500}}>Track visitors with GA4</span>
+        </div>
+        <div style={{padding:"8px 0 20px"}}>
+
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",
+            background: analytics.enabled ? "#FFF3ED" : "#F8F4F0", borderRadius:10, marginBottom:16,
+            border:`1.5px solid ${analytics.enabled ? "#E8620A" : "#E8D5C0"}`}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:".95rem",color:"#18100A"}}>Enable Tracking</div>
+              <div style={{fontSize:".8rem",color:"#6B4C38",marginTop:2}}>
+                {analytics.enabled ? "GA4 tracking script is active on the live site" : "No analytics script is loaded"}
+              </div>
+            </div>
+            <div onClick={() => setAnalytics(a => ({...a, enabled: !a.enabled}))}
+              style={{width:44,height:24,borderRadius:12,background: analytics.enabled ? "#E8620A" : "#D1C5BB",
+                position:"relative",transition:"background .2s",cursor:"pointer",flexShrink:0}}>
+              <div style={{position:"absolute",top:3,left: analytics.enabled ? 22 : 3,width:18,height:18,
+                borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+            </div>
+          </div>
+
+          <div className="admin-inp-grp" style={{maxWidth:320}}>
+            <label>Measurement ID</label>
+            <input value={analytics.gaId} onChange={e => setAnalytics(a => ({...a, gaId: e.target.value}))}
+              placeholder="G-XXXXXXXXXX" style={{fontFamily:"monospace"}}/>
+            <span style={{fontSize:".73rem",color:"#6B4C38",marginTop:4,display:"block"}}>
+              Google Analytics → Admin → Data Streams → your web stream
+            </span>
+          </div>
+
+          <div style={{display:"flex",gap:12,alignItems:"center",marginTop:8}}>
+            <button className="admin-btn admin-btn-primary" onClick={handleSaveAnalytics}>Save Analytics</button>
+            {analyticsSaved && <span style={{color:"#2D7D46",fontSize:".88rem",fontWeight:600}}>✓ Saved!</span>}
           </div>
         </div>
       </div>

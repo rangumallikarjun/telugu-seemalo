@@ -87,6 +87,26 @@ export default function App() {
     }).catch(() => {});
   }, []);
 
+  // Load Google Analytics (GA4) if enabled from Admin → Settings
+  useEffect(() => {
+    getDoc(doc(db, "settings", "analytics")).then(snap => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const gaId = data.gaId?.trim();
+      if (!data.enabled || !gaId) return;
+
+      const script1 = document.createElement("script");
+      script1.async = true;
+      script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+      document.head.appendChild(script1);
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { window.dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", gaId);
+    }).catch(() => {});
+  }, []);
+
   // Room Builder can be toggled off from Admin → Settings
   const [roomBuilderEnabled, setRoomBuilderEnabled] = useState(true);
   useEffect(() => {

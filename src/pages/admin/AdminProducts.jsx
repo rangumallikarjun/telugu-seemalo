@@ -144,6 +144,44 @@ function SpecsList({ specs, onChange }) {
   );
 }
 
+function SizeGuideList({ sg, onChange }) {
+  const [row, setRow] = useState({ sz: "", dim: "", wt: "", best: "" });
+  const setF = (k, v) => setRow(r => ({ ...r, [k]: v }));
+  const add = () => {
+    if (!row.sz.trim() || !row.dim.trim()) return;
+    onChange([...sg, { sz: row.sz.trim(), dim: row.dim.trim(), wt: row.wt.trim(), best: row.best.trim() }]);
+    setRow({ sz: "", dim: "", wt: "", best: "" });
+  };
+  const remove = (i) => onChange(sg.filter((_, idx) => idx !== i));
+  return (
+    <div className="admin-inp-grp">
+      <label>Size Guide</label>
+      <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:8}}>
+        {sg.map((r, i) => (
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,background:"#F4EDE5",padding:"6px 10px",borderRadius:8,fontSize:".85rem"}}>
+            <span style={{fontWeight:700,minWidth:70,color:"#2D1E12"}}>{r.sz}</span>
+            <span style={{flex:1,color:"#6B4C38"}}>{r.dim}</span>
+            <span style={{flex:1,color:"#6B4C38"}}>{r.wt}</span>
+            <span style={{flex:1,color:"#6B4C38"}}>{r.best}</span>
+            <button type="button" onClick={() => remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"#C0392B",fontWeight:700}}>×</button>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <input value={row.sz} onChange={e => setF("sz", e.target.value)} placeholder="Size (e.g. Double)"
+          style={{width:110,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+        <input value={row.dim} onChange={e => setF("dim", e.target.value)} placeholder="Dimensions (e.g. 90×100 in)"
+          style={{flex:1,minWidth:140,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+        <input value={row.wt} onChange={e => setF("wt", e.target.value)} placeholder="Weight (e.g. 1.2 kg)"
+          style={{width:120,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+        <input value={row.best} onChange={e => setF("best", e.target.value)} placeholder="Best for (e.g. Queen beds)"
+          style={{flex:1,minWidth:140,padding:"7px 10px",border:"1.5px solid #E8D5C0",borderRadius:7,fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none"}}/>
+        <button type="button" onClick={add} className="admin-btn admin-btn-outline admin-btn-sm">+ Add</button>
+      </div>
+    </div>
+  );
+}
+
 // ── Media uploader (photos) ───────────────────────────────────────────────────
 function MediaUploader({ images, productId, onChange }) {
   const inputRef = useRef();
@@ -344,6 +382,7 @@ function ProductModal({ product, onSave, onClose }) {
         <ColorList colors={form.colors || []} allImages={form.images || []} onChange={v => set("colors", v)}/>
         <StringList label="Features" items={form.features || []} onChange={v => set("features", v)}/>
         <SpecsList specs={form.specs || []} onChange={v => set("specs", v)}/>
+        <SizeGuideList sg={form.sg || []} onChange={v => set("sg", v)}/>
 
         {error && <p style={{color:"#C0392B",fontSize:".85rem",marginBottom:10}}>{error}</p>}
 
