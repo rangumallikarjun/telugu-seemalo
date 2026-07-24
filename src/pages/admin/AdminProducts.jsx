@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { getProducts, addProduct, updateProduct, deleteProduct } from "../../firebase/productService";
 import { uploadProductImage, uploadProductVideo, deleteFileByUrl } from "../../firebase/storageService";
-import { CATS } from "../../data/products";
 import { fmt, NoImageIcon } from "../../utils/helpers";
 import { useCropUpload } from "../../hooks/useCropUpload";
+import { useProductCategories } from "../../hooks/useProductCategories";
 import ImageCropModal from "../../components/ImageCropModal";
 
 const EMPTY = {
@@ -299,7 +299,7 @@ function VideoUploader({ video, productId, onChange }) {
 }
 
 // ── Product Modal ─────────────────────────────────────────────────────────────
-function ProductModal({ product, onSave, onClose }) {
+function ProductModal({ product, onSave, onClose, categories }) {
   const [form, setForm]   = useState(product ? { ...product } : { ...EMPTY, id: Date.now() });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -331,7 +331,7 @@ function ProductModal({ product, onSave, onClose }) {
           <div className="admin-inp-grp">
             <label>Category</label>
             <select value={form.category} onChange={e => set("category", e.target.value)}>
-              {CATS.filter(c => c !== "All").map(c => <option key={c}>{c}</option>)}
+              {categories.filter(c => c !== "All").map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div className="admin-inp-grp">
@@ -452,6 +452,7 @@ function ProductThumb({ p }) {
 
 // ── Main AdminProducts ────────────────────────────────────────────────────────
 export default function AdminProducts() {
+  const categories = useProductCategories();
   const [products, setProducts] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [modal, setModal]       = useState(null);
@@ -536,7 +537,7 @@ export default function AdminProducts() {
           <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
             <button className="admin-btn admin-btn-outline admin-btn-sm" onClick={load}>↺ Refresh</button>
             <select className="status-select" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
-              {["All","Pots","Clocks","Curtains","Bed Sheets","Home Decor"].map(c => <option key={c}>{c}</option>)}
+              {categories.map(c => <option key={c}>{c}</option>)}
             </select>
             <input className="admin-search" placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)}/>
             <button className="admin-btn admin-btn-primary" onClick={() => setModal("add")}>+ Add Product</button>
@@ -611,6 +612,7 @@ export default function AdminProducts() {
           product={modal === "add" ? null : modal}
           onSave={handleSave}
           onClose={() => setModal(null)}
+          categories={categories}
         />
       )}
     </div>

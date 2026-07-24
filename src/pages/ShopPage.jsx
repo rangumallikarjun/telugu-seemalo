@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { getProducts } from "../firebase/productService";
-import { CATS } from "../data/products";
 import ProductCard from "../components/ProductCard";
 import { fmt, NoImageIcon } from "../utils/helpers";
 import { getRecentlyViewed } from "../utils/recentlyViewed";
+import { useProductCategories } from "../hooks/useProductCategories";
 
 const PER_PAGE = 30;
 
 export default function ShopPage({ onOpen, onAdd }) {
+  const CATS = useProductCategories();
   const [products, setProducts]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [cat, setCat]             = useState("All");
