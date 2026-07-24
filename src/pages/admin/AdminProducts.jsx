@@ -10,7 +10,7 @@ const EMPTY = {
   id: Date.now(), name: "", category: "Pots", price: "", originalPrice: "",
   description: "", stock: "", isNew: false, featured: false, comingSoon: false,
   sizes: [], colors: [], features: [], specs: [], sg: [],
-  images: [], video: "",
+  images: [], video: "", amazonUrl: "",
 };
 
 // ── Spinner ───────────────────────────────────────────────────────────────────
@@ -351,6 +351,11 @@ function ProductModal({ product, onSave, onClose, categories }) {
         <div className="admin-inp-grp">
           <label>Description</label>
           <textarea value={form.description} onChange={e => set("description", e.target.value)} rows={3} placeholder="Product description…"/>
+        </div>
+
+        <div className="admin-inp-grp">
+          <label>Amazon Product URL (optional)</label>
+          <input value={form.amazonUrl || ""} onChange={e => set("amazonUrl", e.target.value)} placeholder="https://www.amazon.in/dp/…"/>
         </div>
 
         <div className="admin-inp-grp" style={{display:"flex",alignItems:"center",gap:10}}>

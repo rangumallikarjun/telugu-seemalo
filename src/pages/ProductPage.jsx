@@ -708,6 +708,12 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
               <button className="pd-wish" title="Add to wishlist">♡</button>
             </div>
 
+            {p.amazonUrl && (
+              <a className="pd-amazon-btn" href={p.amazonUrl} target="_blank" rel="noopener noreferrer">
+                Also available on <span className="pd-amazon-logo">amazon</span>
+              </a>
+            )}
+
             {/* Estimated delivery */}
             {p.stock !== 0 && !p.comingSoon && (
               <div className="pd-delivery">

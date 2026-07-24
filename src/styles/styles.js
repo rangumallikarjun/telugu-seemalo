@@ -297,6 +297,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .pd-wish:hover{border-color:var(--sf);background:rgba(232,98,10,.06);}
 .stock-low{font-size:.8rem;color:var(--er);font-weight:600;margin-bottom:12px;}
 
+/* Amazon link */
+.pd-amazon-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:#232F3E;color:#fff;border:1.5px solid #232F3E;padding:11px 20px;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;margin-bottom:18px;font-family:'DM Sans',sans-serif;}
+.pd-amazon-btn:hover{background:#374357;border-color:#374357;transform:translateY(-1px);}
+.pd-amazon-logo{font-family:Arial,sans-serif;font-weight:700;font-size:.95rem;color:#FF9900;letter-spacing:.01em;}
+
 /* Delivery estimate */
 .pd-delivery{background:linear-gradient(135deg,#F4EDE5,#FFF8F2);border:1px solid rgba(232,98,10,.14);border-radius:10px;padding:12px 14px;margin:14px 0;}
 .pd-delivery-hd{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--sf);margin-bottom:9px;}
