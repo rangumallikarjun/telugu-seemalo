@@ -159,9 +159,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .trust{background:var(--dk2);padding:16px 20px;display:flex;justify-content:center;gap:clamp(16px,4vw,48px);flex-wrap:wrap;}
 .trust-item{display:flex;align-items:center;gap:8px;color:#BFB09A;font-size:.8rem;font-weight:500;}
 .trust-item span:first-child{font-size:1.1rem;}
+@media(max-width:1024px){
+  .trust{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;padding:18px 20px;}
+  .trust-item{justify-content:center;text-align:left;}
+}
 @media(max-width:480px){
-  .trust{display:grid;grid-template-columns:1fr 1fr;gap:12px 8px;padding:16px 14px;}
-  .trust-item{justify-content:center;text-align:left;font-size:.72rem;}
+  .trust{gap:12px 8px;padding:16px 14px;}
+  .trust-item{font-size:.72rem;}
   .trust-item span:first-child{font-size:1rem;flex-shrink:0;}
 }
 
