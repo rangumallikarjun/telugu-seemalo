@@ -8,7 +8,10 @@ const col = () => collection(db, "products");
 
 export const getProducts = async () => {
   const snap = await getDocs(query(col(), orderBy("id")));
-  return snap.docs.map(d => ({ ...d.data(), docId: d.id }));
+  const list = snap.docs.map(d => ({ ...d.data(), docId: d.id }));
+  // Admin-set sortOrder takes priority; products without one fall back to id (creation order)
+  list.sort((a, b) => (a.sortOrder ?? a.id) - (b.sortOrder ?? b.id));
+  return list;
 };
 
 export const addProduct = async (product) => {

@@ -480,6 +480,19 @@ export default function AdminProducts() {
     load();
   };
 
+  const handleMove = async (index, dir) => {
+    const j = index + dir;
+    if (j < 0 || j >= filtered.length) return;
+    const a = filtered[index], b = filtered[j];
+    const aOrder = a.sortOrder ?? a.id;
+    const bOrder = b.sortOrder ?? b.id;
+    await Promise.all([
+      updateProduct(a.docId, { sortOrder: bOrder }),
+      updateProduct(b.docId, { sortOrder: aOrder }),
+    ]);
+    load();
+  };
+
   const filtered = products.filter(p =>
     (catFilter === "All" || p.category === catFilter) &&
     (!search || p.name?.toLowerCase().includes(search.toLowerCase()))
@@ -512,11 +525,21 @@ export default function AdminProducts() {
         ) : (
           <table className="admin-table">
             <thead>
-              <tr><th></th><th>Name</th><th>Category</th><th>Price / MRP</th><th>Stock</th><th>Actions</th></tr>
+              <tr><th></th><th></th><th>Name</th><th>Category</th><th>Price / MRP</th><th>Stock</th><th>Actions</th></tr>
             </thead>
             <tbody>
-              {filtered.map(p => (
+              {filtered.map((p, i) => (
                 <tr key={p.docId}>
+                  <td>
+                    <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                      <button className="admin-btn-icon" title="Move up" disabled={i === 0}
+                        style={{padding:"2px 6px",fontSize:".7rem",opacity: i === 0 ? .35 : 1}}
+                        onClick={() => handleMove(i, -1)}>↑</button>
+                      <button className="admin-btn-icon" title="Move down" disabled={i === filtered.length - 1}
+                        style={{padding:"2px 6px",fontSize:".7rem",opacity: i === filtered.length - 1 ? .35 : 1}}
+                        onClick={() => handleMove(i, 1)}>↓</button>
+                    </div>
+                  </td>
                   <td className="emoji-cell">
                     <ProductThumb p={p}/>
                   </td>
