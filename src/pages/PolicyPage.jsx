@@ -31,21 +31,60 @@ export const DEFAULT_RETURN_ITEMS = [
   "Shipping charges are non-refundable unless the return is due to a defective or incorrect item.",
 ];
 
-export default function PolicyPage({ docId, title, subtitle, defaultItems }) {
+export const DEFAULT_PRIVACY_ITEMS = [
+  "We collect the information you provide when placing an order — name, phone number, shipping address, and email — solely to fulfil and communicate about your order.",
+  "Payment details are handled directly by our payment gateway partners; we do not store your card, UPI, or bank details on our servers.",
+  "We use cookies and similar technologies to keep your cart working, remember your preferences, and understand how the site is used.",
+  "We do not sell or rent your personal data to third parties. Data is shared only with trusted service providers (payment, shipping, analytics) as needed to run the store.",
+  "You may request access to, correction of, or deletion of your personal data by contacting our support team.",
+  "We retain order data for as long as needed to comply with tax, accounting, and legal obligations.",
+  "By using this website, you consent to the collection and use of information as described in this section.",
+];
+
+function PolicySection({ title, items }) {
+  if (!items?.length) return null;
+  return (
+    <div style={{marginTop: title ? 46 : 0}}>
+      {title && <h2 style={{fontSize:"1.3rem",marginBottom:22,color:"var(--dk)"}}>{title}</h2>}
+      <ol style={{display:"flex",flexDirection:"column",gap:18,listStyle:"none",padding:0,margin:0,counterReset:"policy-counter"}}>
+        {items.map((text, i) => (
+          <li key={i} style={{display:"flex",gap:16,alignItems:"flex-start"}}>
+            <span style={{flexShrink:0,width:30,height:30,borderRadius:"50%",background:"var(--sf)",color:"#fff",
+              display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:".85rem"}}>
+              {i + 1}
+            </span>
+            <p style={{margin:0,color:"var(--dk)",lineHeight:1.7,paddingTop:4}}>{text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+export default function PolicyPage({ docId, title, subtitle, defaultItems, extraSection }) {
   const [items, setItems] = useState(defaultItems);
+  const [extraItems, setExtraItems] = useState(extraSection?.defaultItems || []);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDoc(doc(db, "settings", docId))
-      .then(snap => {
+    const docs = [getDoc(doc(db, "settings", docId))];
+    if (extraSection) docs.push(getDoc(doc(db, "settings", extraSection.docId)));
+
+    Promise.all(docs)
+      .then(([snap, extraSnap]) => {
         if (snap.exists()) {
           const data = snap.data();
           if (Array.isArray(data.items) && data.items.length > 0) setItems(data.items);
         }
+        if (extraSnap?.exists()) {
+          const data = extraSnap.data();
+          if (Array.isArray(data.items) && data.items.length > 0) setExtraItems(data.items);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [docId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docId, extraSection?.docId]);
 
   return (
     <div>
@@ -57,17 +96,10 @@ export default function PolicyPage({ docId, title, subtitle, defaultItems }) {
         {loading ? (
           <p style={{color:"var(--mt)",textAlign:"center"}}>Loading…</p>
         ) : (
-          <ol style={{display:"flex",flexDirection:"column",gap:18,listStyle:"none",padding:0,margin:0,counterReset:"policy-counter"}}>
-            {items.map((text, i) => (
-              <li key={i} style={{display:"flex",gap:16,alignItems:"flex-start"}}>
-                <span style={{flexShrink:0,width:30,height:30,borderRadius:"50%",background:"var(--sf)",color:"#fff",
-                  display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:".85rem"}}>
-                  {i + 1}
-                </span>
-                <p style={{margin:0,color:"var(--dk)",lineHeight:1.7,paddingTop:4}}>{text}</p>
-              </li>
-            ))}
-          </ol>
+          <>
+            <PolicySection items={items}/>
+            {extraSection && <PolicySection title={extraSection.title} items={extraItems}/>}
+          </>
         )}
       </div>
     </div>

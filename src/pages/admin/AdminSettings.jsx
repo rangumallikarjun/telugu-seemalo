@@ -3,7 +3,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import { uploadHeroSlideImage, uploadStoryChapterImage } from "../../firebase/storageService";
 import { DEFAULT_HERO_SLIDES, HERO_PAGE_OPTIONS, DEFAULT_TRUST_ITEMS, DEFAULT_STATS_ITEMS, DEFAULT_STORY_CHAPTERS, DEFAULT_CATEGORY_ITEMS, DEFAULT_SOCIAL_LINKS, DEFAULT_TAGLINE_PHRASES } from "../HomePage";
-import { DEFAULT_TERMS_ITEMS, DEFAULT_SHIPPING_ITEMS, DEFAULT_RETURN_ITEMS } from "../PolicyPage";
+import { DEFAULT_TERMS_ITEMS, DEFAULT_SHIPPING_ITEMS, DEFAULT_RETURN_ITEMS, DEFAULT_PRIVACY_ITEMS } from "../PolicyPage";
 import { useCropUpload } from "../../hooks/useCropUpload";
 import ImageCropModal from "../../components/ImageCropModal";
 
@@ -87,6 +87,7 @@ const SOCIAL_DEFAULTS = {
 const TERMS_DEFAULTS    = { items: DEFAULT_TERMS_ITEMS };
 const SHIPPING_POLICY_DEFAULTS = { items: DEFAULT_SHIPPING_ITEMS };
 const RETURN_POLICY_DEFAULTS   = { items: DEFAULT_RETURN_ITEMS };
+const PRIVACY_POLICY_DEFAULTS  = { items: DEFAULT_PRIVACY_ITEMS };
 
 const RESPONSE_TIMES_DEFAULTS = {
   items: [
@@ -151,9 +152,11 @@ export default function AdminSettings() {
   const [terms, setTerms]                 = useState(TERMS_DEFAULTS);
   const [shippingPolicy, setShippingPolicy] = useState(SHIPPING_POLICY_DEFAULTS);
   const [returnPolicy, setReturnPolicy]     = useState(RETURN_POLICY_DEFAULTS);
+  const [privacyPolicy, setPrivacyPolicy]   = useState(PRIVACY_POLICY_DEFAULTS);
   const [termsSaved, setTermsSaved]                 = useState(false);
   const [shippingPolicySaved, setShippingPolicySaved] = useState(false);
   const [returnPolicySaved, setReturnPolicySaved]     = useState(false);
+  const [privacyPolicySaved, setPrivacyPolicySaved]   = useState(false);
   const [loading, setLoading]   = useState(true);
   const [storeSaved, setStoreSaved] = useState(false);
   const [taxSaved, setTaxSaved]     = useState(false);
@@ -188,10 +191,11 @@ export default function AdminSettings() {
       getDoc(doc(db, "settings", "termsPolicy")),
       getDoc(doc(db, "settings", "shippingPolicy")),
       getDoc(doc(db, "settings", "returnPolicy")),
+      getDoc(doc(db, "settings", "privacyPolicy")),
       getDoc(doc(db, "settings", "seo")),
       getDoc(doc(db, "settings", "responseTimes")),
       getDoc(doc(db, "settings", "analytics")),
-    ]).then(([storeSnap, taxSnap, mqSnap, heroSnap, trustSnap, statsSnap, storySnap, categorySnap, socialSnap, termsSnap, shipPolSnap, retPolSnap, seoSnap, responseTimesSnap, analyticsSnap]) => {
+    ]).then(([storeSnap, taxSnap, mqSnap, heroSnap, trustSnap, statsSnap, storySnap, categorySnap, socialSnap, termsSnap, shipPolSnap, retPolSnap, privacyPolSnap, seoSnap, responseTimesSnap, analyticsSnap]) => {
       if (storeSnap.exists()) setForm({ ...STORE_DEFAULTS, ...storeSnap.data() });
       if (taxSnap.exists())   setTax({ ...TAX_DEFAULTS, ...taxSnap.data() });
       if (mqSnap.exists())    setMq({ ...MQ_DEFAULTS, ...mqSnap.data() });
@@ -234,6 +238,10 @@ export default function AdminSettings() {
       if (retPolSnap.exists()) {
         const data = retPolSnap.data();
         setReturnPolicy({ items: data.items?.length ? data.items : RETURN_POLICY_DEFAULTS.items });
+      }
+      if (privacyPolSnap.exists()) {
+        const data = privacyPolSnap.data();
+        setPrivacyPolicy({ items: data.items?.length ? data.items : PRIVACY_POLICY_DEFAULTS.items });
       }
       if (seoSnap.exists()) setSeo({ ...SEO_DEFAULTS, ...seoSnap.data() });
       if (responseTimesSnap.exists()) {
@@ -427,6 +435,7 @@ export default function AdminSettings() {
   const termsH   = makeListHandlers(setTerms);
   const shipPolH = makeListHandlers(setShippingPolicy);
   const retPolH  = makeListHandlers(setReturnPolicy);
+  const privacyPolH = makeListHandlers(setPrivacyPolicy);
 
   const savePolicy = async (docName, data, setSavedFlag, label) => {
     if (!window.confirm(`Save changes to ${label}? This will update the live site.`)) return;
@@ -1285,6 +1294,10 @@ export default function AdminSettings() {
       <PolicyListEditor title="Return Policy" subtitle="Public page: /return-policy"
         items={returnPolicy.items} handlers={retPolH} saved={returnPolicySaved} onRefresh={load}
         onSave={() => savePolicy("returnPolicy", returnPolicy, setReturnPolicySaved, "Return Policy")}/>
+
+      <PolicyListEditor title="Data & Privacy" subtitle="Section on: /terms (below Terms & Conditions)"
+        items={privacyPolicy.items} handlers={privacyPolH} saved={privacyPolicySaved} onRefresh={load}
+        onSave={() => savePolicy("privacyPolicy", privacyPolicy, setPrivacyPolicySaved, "Data & Privacy")}/>
 
       {/* ── Contact Page — Response Times ────────────────────────────────── */}
       <div className="admin-card" style={{maxWidth:700,marginBottom:20}}>
