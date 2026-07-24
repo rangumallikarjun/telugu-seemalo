@@ -15,6 +15,7 @@ const LINKS = [
   { id: "shipping",  icon: "🚚", label: "Shipping" },
   { id: "payments",  icon: "💳", label: "Payments" },
   { id: "returns",   icon: "↩",  label: "Returns" },
+  { id: "policies",  icon: "⚖️", label: "Policy Pages" },
   { id: "settings",  icon: "⚙️", label: "Settings" },
 ];
 

@@ -6,6 +6,7 @@ import AdminReports from "./admin/AdminReports";
 import AdminProducts from "./admin/AdminProducts";
 import AdminAbout from "./admin/AdminAbout";
 import AdminHomepage from "./admin/AdminHomepage";
+import AdminPolicies from "./admin/AdminPolicies";
 import AdminOrders from "./admin/AdminOrders";
 import AdminCustomers from "./admin/AdminCustomers";
 import AdminCoupons from "./admin/AdminCoupons";
@@ -32,6 +33,7 @@ const TAB_TITLES = {
   shipping:  "Shipping",
   payments:  "Payments",
   returns:   "Returns & Exchanges",
+  policies:  "Policy Pages",
   settings:  "Settings",
 };
 
@@ -79,6 +81,7 @@ export default function AdminPage({user, setUser, setPage}) {
           {tab === "shipping"  && <AdminShipping/>}
           {tab === "payments"  && <AdminPayments/>}
           {tab === "returns"   && <AdminReturns/>}
+          {tab === "policies"  && <AdminPolicies/>}
           {tab === "settings"  && <AdminSettings/>}
         </div>
       </div>
