@@ -617,7 +617,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
         <button className="pd-back" onClick={onBack}>← Back to Shop</button>
         <div className="pd-grid">
 
-          <MediaSlider images={p.images} video={p.video}/>
+          <MediaSlider key={clr?.name || "default"} images={clr?.images?.length > 0 ? clr.images : p.images} video={p.video}/>
 
           <div className="pd-info">
             <div className="pd-cat">{p.category}</div>

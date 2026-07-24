@@ -45,26 +45,60 @@ function StringList({ label, items, onChange }) {
 }
 
 // ── Color list ────────────────────────────────────────────────────────────────
-function ColorList({ colors, onChange }) {
+function ColorList({ colors, allImages, onChange }) {
   const [name, setName] = useState("");
   const [hex, setHex]   = useState("#E8620A");
+  const [expanded, setExpanded] = useState(null);
   const add = () => {
     if (!name.trim()) return;
     const cleanHex = "#" + hex.replace(/^#/, "").trim();
-    onChange([...colors, { name: name.trim(), hex: cleanHex }]);
+    onChange([...colors, { name: name.trim(), hex: cleanHex, images: [] }]);
     setName(""); setHex("#E8620A");
   };
   const remove = (i) => onChange(colors.filter((_, idx) => idx !== i));
+  const toggleImage = (i, url) => {
+    const cur = colors[i].images || [];
+    const next = cur.includes(url) ? cur.filter(u => u !== url) : [...cur, url];
+    onChange(colors.map((c, idx) => idx === i ? { ...c, images: next } : c));
+  };
   return (
     <div className="admin-inp-grp">
       <label>Colors</label>
       <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
         {colors.map((c, i) => (
-          <div key={i} style={{display:"flex",alignItems:"center",gap:8,background:"#F4EDE5",padding:"6px 10px",borderRadius:8}}>
-            <div style={{width:20,height:20,borderRadius:"50%",background:c.hex,border:"2px solid #fff",boxShadow:"0 0 0 1px #E8D5C0"}}/>
-            <span style={{flex:1,fontSize:".85rem"}}>{c.name}</span>
-            <span style={{fontSize:".75rem",color:"#6B4C38"}}>{c.hex}</span>
-            <button type="button" onClick={() => remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"#C0392B",fontWeight:700}}>×</button>
+          <div key={i} style={{background:"#F4EDE5",borderRadius:8,padding:"6px 10px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:20,height:20,borderRadius:"50%",background:c.hex,border:"2px solid #fff",boxShadow:"0 0 0 1px #E8D5C0",flexShrink:0}}/>
+              <span style={{flex:1,fontSize:".85rem"}}>{c.name}</span>
+              <span style={{fontSize:".75rem",color:"#6B4C38"}}>{c.hex}</span>
+              {allImages.length > 0 && (
+                <button type="button" onClick={() => setExpanded(expanded === i ? null : i)}
+                  style={{background:"none",border:"1.5px solid #D8C4A8",borderRadius:6,cursor:"pointer",color:"#6B4C38",fontSize:".72rem",padding:"3px 8px"}}>
+                  {(c.images || []).length > 0 ? `🖼️ ${c.images.length} photo${c.images.length>1?"s":""}` : "🖼️ Link photos"}
+                </button>
+              )}
+              <button type="button" onClick={() => remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"#C0392B",fontWeight:700}}>×</button>
+            </div>
+            {expanded === i && allImages.length > 0 && (
+              <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #E8D5C0"}}>
+                <div style={{fontSize:".72rem",color:"#6B4C38",marginBottom:6}}>
+                  Select which photos show when a customer picks this colour (leave none selected to show all photos):
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {allImages.map((url, ui) => {
+                    const on = (c.images || []).includes(url);
+                    return (
+                      <button key={ui} type="button" onClick={() => toggleImage(i, url)}
+                        style={{position:"relative",width:52,height:52,borderRadius:6,padding:0,cursor:"pointer",
+                          border: on ? "2.5px solid #E8620A" : "1.5px solid #D8C4A8",overflow:"hidden"}}>
+                        <img src={url} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                        {on && <div style={{position:"absolute",inset:0,background:"rgba(232,98,10,.28)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900}}>✓</div>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -307,7 +341,7 @@ function ProductModal({ product, onSave, onClose }) {
         <VideoUploader video={form.video || ""} productId={form.id} onChange={v => set("video", v)}/>
 
         <StringList label="Sizes" items={form.sizes || []} onChange={v => set("sizes", v)}/>
-        <ColorList colors={form.colors || []} onChange={v => set("colors", v)}/>
+        <ColorList colors={form.colors || []} allImages={form.images || []} onChange={v => set("colors", v)}/>
         <StringList label="Features" items={form.features || []} onChange={v => set("features", v)}/>
         <SpecsList specs={form.specs || []} onChange={v => set("specs", v)}/>
 
