@@ -14,7 +14,8 @@ const S = `
 }
 html,body{min-height:100%;}
 body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
-.app{min-height:100vh;}
+.app{min-height:100vh;display:flex;flex-direction:column;}
+.app>footer{margin-top:auto;}
 
 /* NAV */
 .nav{background:var(--dk);position:sticky;top:0;z-index:1000;box-shadow:0 2px 20px rgba(0,0,0,.35);}
