@@ -818,25 +818,29 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                   🎉 You're saving {fmt(discount + walletApplied)} on this order!
                 </div>
               )}
-              <label style={{display:"flex",alignItems:"flex-start",gap:8,fontSize:".82rem",color:"var(--mt)",margin:"12px 0 4px",cursor:"pointer",lineHeight:1.5}}>
+              <label style={{display:"flex",alignItems:"flex-start",gap:8,fontSize:".82rem",
+                color: termsError ? "#C0392B" : "var(--mt)",margin:"12px 0 4px",cursor:"pointer",lineHeight:1.5,
+                padding: termsError ? "8px 10px" : 0, borderRadius: termsError ? 8 : 0,
+                border: termsError ? "1.5px solid #C0392B" : "1.5px solid transparent",
+                background: termsError ? "#FDECEA" : "transparent", transition:"all .15s"}}>
                 <input type="checkbox" checked={acceptedTerms}
                   onChange={e => { setAcceptedTerms(e.target.checked); if (e.target.checked) setTermsError(false); }}
-                  style={{marginTop:2,width:16,height:16,flexShrink:0,accentColor:"var(--sf)"}}/>
+                  style={{marginTop:2,width:16,height:16,flexShrink:0,accentColor: termsError ? "#C0392B" : "var(--sf)"}}/>
                 <span>
                   I have read and agree to the{" "}
                   <a href={`${window.location.origin}/terms`} target="_blank" rel="noopener noreferrer"
-                    style={{color:"var(--sf)",fontWeight:600,textDecoration:"underline"}}>Terms &amp; Conditions</a>
+                    style={{color: termsError ? "#C0392B" : "var(--sf)",fontWeight:600,textDecoration:"underline"}}>Terms &amp; Conditions</a>
                   {" "}and{" "}
                   <a href={`${window.location.origin}/privacy-policy`} target="_blank" rel="noopener noreferrer"
-                    style={{color:"var(--sf)",fontWeight:600,textDecoration:"underline"}}>Privacy Policy</a>.
+                    style={{color: termsError ? "#C0392B" : "var(--sf)",fontWeight:600,textDecoration:"underline"}}>Privacy Policy</a>.
                 </span>
               </label>
               {termsError && (
-                <div style={{color:"#C0392B",fontSize:".78rem",fontWeight:600,marginBottom:8}}>
-                  Please accept the Terms &amp; Conditions to continue.
+                <div style={{color:"#C0392B",fontSize:".78rem",fontWeight:600,margin:"6px 0 8px"}}>
+                  ⚠ Please accept the Terms &amp; Conditions to continue.
                 </div>
               )}
-              <button type="submit" className="pay-btn" disabled={placing || !acceptedTerms}>
+              <button type="submit" className="pay-btn" disabled={placing}>
                 {placing ? "Placing order…"
                   : amountToPay === 0 ? "Place Order (Wallet Paid) →"
                   : `Pay ${fmt(amountToPay)} →`}
