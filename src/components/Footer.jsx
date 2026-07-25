@@ -62,7 +62,7 @@ export default function Footer({setPage}) {
         <div className="foot-col">
           <h4>Info</h4>
           <ul>
-            {[["About Us","about"],["Shop","shop"],["Terms & Conditions","terms"],["Shipping Policy","shipping-policy"],["Return Policy","return-policy"]].map(([l,p]) => (
+            {[["About Us","about"],["Shop","shop"],["Terms & Conditions","terms"],["Privacy Policy","privacy-policy"],["Shipping Policy","shipping-policy"],["Return Policy","return-policy"]].map(([l,p]) => (
               <li key={l}><button onClick={() => setPage(p)}>{l}</button></li>
             ))}
             <li><button onClick={() => setPage("contact")} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",fontFamily:"inherit",fontSize:"inherit",padding:0,textAlign:"left"}}>Contact Us</button></li>

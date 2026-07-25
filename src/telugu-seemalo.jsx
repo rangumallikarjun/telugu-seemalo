@@ -16,7 +16,7 @@ import AdminPage from "./pages/AdminPage";
 import TrackOrderPage from "./pages/TrackOrderPage";
 import ContactPage from "./pages/ContactPage";
 import RoomBuilderPage from "./pages/RoomBuilderPage";
-import PolicyPage, { DEFAULT_TERMS_ITEMS, DEFAULT_SHIPPING_ITEMS, DEFAULT_RETURN_ITEMS, DEFAULT_PRIVACY_ITEMS } from "./pages/PolicyPage";
+import PolicyPage, { DEFAULT_TERMS_SECTIONS, DEFAULT_SHIPPING_SECTIONS, DEFAULT_RETURN_SECTIONS, DEFAULT_PRIVACY_SECTIONS } from "./pages/PolicyPage";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "./firebase/config";
 import { onAuthChange } from "./firebase/authService";
@@ -39,6 +39,10 @@ const PAGE_PATH = {
   track:    "/track",
   admin:    "/admin",
   room:     "/room-builder",
+  terms:             "/terms",
+  "privacy-policy":  "/privacy-policy",
+  "shipping-policy": "/shipping-policy",
+  "return-policy":   "/return-policy",
 };
 
 const pathToPage = (pathname) => {
@@ -310,10 +314,10 @@ export default function App() {
       {page === "track"    && <TrackOrderPage user={user} setPage={navigate}/>}
       {page === "contact"  && <ContactPage setPage={navigate} user={user}/>}
       {page === "room"     && <RoomBuilderPage products={products} setPage={navigate} addToCart={addToCart} user={user}/>}
-      {page === "terms"    && <PolicyPage docId="termsPolicy" title="Terms & Conditions" subtitle="Please read these terms carefully before using our site or placing an order." defaultItems={DEFAULT_TERMS_ITEMS}
-        extraSection={{ docId: "privacyPolicy", title: "Data & Privacy", defaultItems: DEFAULT_PRIVACY_ITEMS }}/>}
-      {page === "shipping-policy" && <PolicyPage docId="shippingPolicy" title="Shipping Policy" subtitle="Everything you need to know about how we ship your order." defaultItems={DEFAULT_SHIPPING_ITEMS}/>}
-      {page === "return-policy"   && <PolicyPage docId="returnPolicy" title="Return Policy" subtitle="Our process for returns, exchanges, and refunds." defaultItems={DEFAULT_RETURN_ITEMS}/>}
+      {page === "terms"    && <PolicyPage docId="termsPolicy" title="Terms & Conditions" subtitle="Please read these terms carefully before using our site or placing an order." defaultSections={DEFAULT_TERMS_SECTIONS}/>}
+      {page === "privacy-policy"  && <PolicyPage docId="privacyPolicy" title="Privacy Policy" subtitle="How we collect, use, and protect your personal information." defaultSections={DEFAULT_PRIVACY_SECTIONS}/>}
+      {page === "shipping-policy" && <PolicyPage docId="shippingPolicy" title="Shipping Policy" subtitle="Everything you need to know about how we ship your order." defaultSections={DEFAULT_SHIPPING_SECTIONS}/>}
+      {page === "return-policy"   && <PolicyPage docId="returnPolicy" title="Return Policy" subtitle="Our process for returns, exchanges, and refunds." defaultSections={DEFAULT_RETURN_SECTIONS}/>}
 
       <CartDrawer cart={cart} open={cartOpen} onClose={() => setCartOpen(false)} onQty={updateQty} onRemove={removeFromCart} setPage={navigate}/>
       <AuthModal mode={authMode} setMode={setAuthMode} onAuth={handleAuth}/>
