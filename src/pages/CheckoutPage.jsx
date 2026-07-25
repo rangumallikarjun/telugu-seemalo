@@ -74,6 +74,8 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
   const [placing, setPlacing]     = useState(false);
   const [pinLookup, setPinLookup] = useState({ loading: false, error: "" });
   const [cityDraft,  setCityDraft]  = useState({ active: false, val: "" });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState(false);
 
   const handlePinChange = async (pin) => {
     // Clear stale city/state the moment a new 6-digit pin is entered
@@ -282,6 +284,8 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
 
   const placeOrder = async e => {
     e.preventDefault();
+    if (!acceptedTerms) { setTermsError(true); return; }
+    setTermsError(false);
     setWalletError("");
 
     // Open Razorpay if there's an amount to pay externally
@@ -814,7 +818,25 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                   🎉 You're saving {fmt(discount + walletApplied)} on this order!
                 </div>
               )}
-              <button type="submit" className="pay-btn" disabled={placing}>
+              <label style={{display:"flex",alignItems:"flex-start",gap:8,fontSize:".82rem",color:"var(--mt)",margin:"12px 0 4px",cursor:"pointer",lineHeight:1.5}}>
+                <input type="checkbox" checked={acceptedTerms}
+                  onChange={e => { setAcceptedTerms(e.target.checked); if (e.target.checked) setTermsError(false); }}
+                  style={{marginTop:2,width:16,height:16,flexShrink:0,accentColor:"var(--sf)"}}/>
+                <span>
+                  I have read and agree to the{" "}
+                  <a href={`${window.location.origin}/terms`} target="_blank" rel="noopener noreferrer"
+                    style={{color:"var(--sf)",fontWeight:600,textDecoration:"underline"}}>Terms &amp; Conditions</a>
+                  {" "}and{" "}
+                  <a href={`${window.location.origin}/privacy-policy`} target="_blank" rel="noopener noreferrer"
+                    style={{color:"var(--sf)",fontWeight:600,textDecoration:"underline"}}>Privacy Policy</a>.
+                </span>
+              </label>
+              {termsError && (
+                <div style={{color:"#C0392B",fontSize:".78rem",fontWeight:600,marginBottom:8}}>
+                  Please accept the Terms &amp; Conditions to continue.
+                </div>
+              )}
+              <button type="submit" className="pay-btn" disabled={placing || !acceptedTerms}>
                 {placing ? "Placing order…"
                   : amountToPay === 0 ? "Place Order (Wallet Paid) →"
                   : `Pay ${fmt(amountToPay)} →`}
