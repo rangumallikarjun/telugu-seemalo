@@ -215,6 +215,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .new-badge{position:absolute;top:10px;right:10px;background:var(--sf);color:#fff;font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:10px;letter-spacing:.06em;}
 .sold-out{opacity:.6;}
 .sold-out .pcard-add{background:#aaa;cursor:not-allowed;}
+.pcard.coming-soon{cursor:default;}
+.pcard.coming-soon:hover{transform:none;box-shadow:var(--sh);}
+.pcard.coming-soon .pcard-img{cursor:default;}
 
 /* Recently Viewed */
 .rv-strip{margin-top:32px;padding-top:28px;border-top:1px solid var(--bd);}
@@ -223,6 +226,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .rv-scroll::-webkit-scrollbar{height:4px;}.rv-scroll::-webkit-scrollbar-thumb{background:var(--bd);border-radius:4px;}
 .rv-card{flex:0 0 128px;border-radius:10px;background:#fff;box-shadow:var(--sh);cursor:pointer;overflow:hidden;transition:transform .2s;border:1.5px solid transparent;}
 .rv-card:hover{transform:translateY(-3px);border-color:var(--sf);}
+.rv-card.coming-soon{cursor:default;}
+.rv-card.coming-soon:hover{transform:none;border-color:transparent;}
 .rv-img{height:86px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;background:linear-gradient(135deg,#FDF0E5,#FFF5EC);overflow:hidden;}
 .rv-img img{width:100%;height:100%;object-fit:cover;}
 .rv-info{padding:7px 8px;}
@@ -233,6 +238,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:16px;}
 .wl-card{border-radius:10px;border:1.5px solid var(--bd);overflow:hidden;cursor:pointer;transition:all .2s;}
 .wl-card:hover{border-color:var(--sf);transform:translateY(-2px);}
+.wl-card.coming-soon{cursor:default;}
+.wl-card.coming-soon:hover{border-color:var(--bd);transform:none;}
 .wl-img{height:88px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;background:linear-gradient(135deg,#FDF0E5,#FFF5EC);overflow:hidden;position:relative;}
 .wl-img img{width:100%;height:100%;object-fit:cover;}
 .wl-rm{position:absolute;top:4px;right:4px;background:rgba(255,255,255,.9);border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;color:#C0392B;transition:all .2s;line-height:1;}

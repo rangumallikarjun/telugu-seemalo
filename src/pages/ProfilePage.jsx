@@ -1751,7 +1751,8 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
                 ) : (
                   <div className="wl-grid">
                     {items.map(p => (
-                      <div key={p.id} className="wl-card" onClick={()=>onOpen?.(p)}>
+                      <div key={p.id} className={`wl-card${p.comingSoon ? " coming-soon" : ""}`}
+                        onClick={()=>{ if (!p.comingSoon) onOpen?.(p); }}>
                         <div className="wl-img">
                           {p.images?.[0]?<img src={p.images[0]} alt={p.name}/>:<NoImageIcon/>}
                           <button className="wl-rm" title="Remove" onClick={e=>{e.stopPropagation();removeItem(p.id);}}>×</button>

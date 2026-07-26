@@ -59,7 +59,8 @@ export default function ProductCard({ p, onOpen, onAdd, delay = 0 }) {
     }}>
       <div ref={tiltRef} style={{ willChange: "transform", transformStyle: "preserve-3d" }}
         onMouseMove={handleTilt} onMouseLeave={resetTilt}>
-        <div className={`pcard ${p.stock === 0 ? "sold-out" : ""}`} onClick={() => onOpen(p)}>
+        <div className={`pcard ${p.stock === 0 ? "sold-out" : ""} ${p.comingSoon ? "coming-soon" : ""}`}
+          onClick={() => { if (!p.comingSoon) onOpen(p); }}>
           {p.comingSoon ? <div className="new-badge" style={{background:"#B7770D"}}>COMING SOON</div>
             : p.isNew && <div className="new-badge">NEW</div>}
 

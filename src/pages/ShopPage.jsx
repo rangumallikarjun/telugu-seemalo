@@ -138,7 +138,8 @@ export default function ShopPage({ onOpen, onAdd }) {
           <h4>Recently Viewed</h4>
           <div className="rv-scroll">
             {recentProducts.map(p => (
-              <div key={p.id} className="rv-card" onClick={() => onOpen(p)}>
+              <div key={p.id} className={`rv-card${p.comingSoon ? " coming-soon" : ""}`}
+                onClick={() => { if (!p.comingSoon) onOpen(p); }}>
                 <div className="rv-img">
                   {p.images?.[0] ? <img src={p.images[0]} alt={p.name} /> : <NoImageIcon/>}
                 </div>
