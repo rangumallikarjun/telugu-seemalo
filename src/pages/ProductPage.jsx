@@ -642,8 +642,12 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
             )}
             <div className="pd-price-row">
               <span className="pd-price">{fmt(activePrice)}</span>
-              <span className="pd-oprice">{fmt(activeOriginalPrice)}</span>
-              <span className="pd-disc">{disc(activePrice, activeOriginalPrice)}% off</span>
+              {disc(activePrice, activeOriginalPrice) > 0 && (
+                <>
+                  <span className="pd-oprice">{fmt(activeOriginalPrice)}</span>
+                  <span className="pd-disc">{disc(activePrice, activeOriginalPrice)}% off</span>
+                </>
+              )}
             </div>
             <div className="pd-gi">🏷️ Authentic Craft · Karimnagar, Telangana</div>
             {viewers !== null && (

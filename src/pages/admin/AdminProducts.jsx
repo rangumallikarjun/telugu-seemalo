@@ -390,6 +390,18 @@ function ProductModal({ product, onSave, onClose, categories }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  // Live discount % from Selling Price & MRP (this is exactly what the storefront shows)
+  const discountPct = form.price && form.originalPrice && +form.originalPrice > 0
+    ? Math.round((1 - +form.price / +form.originalPrice) * 100)
+    : 0;
+
+  // Typing a target % recalculates the Selling Price from the MRP
+  const applyDiscountPct = (raw) => {
+    const pct = Math.max(0, Math.min(99, Math.round(+raw || 0)));
+    if (!form.originalPrice || +form.originalPrice <= 0) return;
+    set("price", Math.round(+form.originalPrice * (1 - pct / 100)));
+  };
+
   const handleSave = async () => {
     if (!form.name.trim()) { setError("Product name is required."); return; }
     if (!form.price || !form.originalPrice) { setError("Price fields are required."); return; }
@@ -425,12 +437,26 @@ function ProductModal({ product, onSave, onClose, categories }) {
             </select>
           </div>
           <div className="admin-inp-grp">
+            <label>Original / MRP (₹) *</label>
+            <input type="number" value={form.originalPrice} onChange={e => set("originalPrice", e.target.value)} placeholder="1800"/>
+          </div>
+          <div className="admin-inp-grp">
             <label>Selling Price (₹) *</label>
             <input type="number" value={form.price} onChange={e => set("price", e.target.value)} placeholder="1299"/>
           </div>
           <div className="admin-inp-grp">
-            <label>Original / MRP (₹) *</label>
-            <input type="number" value={form.originalPrice} onChange={e => set("originalPrice", e.target.value)} placeholder="1800"/>
+            <label>Discount %</label>
+            <input type="number" min={0} max={99} value={discountPct}
+              onChange={e => applyDiscountPct(e.target.value)}
+              disabled={!form.originalPrice || +form.originalPrice <= 0}
+              placeholder="0"/>
+            <div style={{fontSize:".72rem",color:"#6B4C38",marginTop:4}}>
+              {form.price && form.originalPrice
+                ? (discountPct > 0
+                    ? `Storefront shows "${discountPct}% off" · customer saves ${fmt(Math.max(0, +form.originalPrice - +form.price))}`
+                    : `No discount shown — Selling Price equals MRP`)
+                : `Auto-calculated from MRP & Selling Price. Type a % here to set the Selling Price from the MRP.`}
+            </div>
           </div>
           <div className="admin-inp-grp">
             <label>Stock Quantity</label>

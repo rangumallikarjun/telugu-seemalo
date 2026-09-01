@@ -88,8 +88,12 @@ export default function ProductCard({ p, onOpen, onAdd, delay = 0 }) {
             )}
             <div className="pcard-price">
               <span className="price">{fmt(p.price)}</span>
-              <span className="oprice">{fmt(p.originalPrice)}</span>
-              <span className="disc">{disc(p.price, p.originalPrice)}% off</span>
+              {disc(p.price, p.originalPrice) > 0 && (
+                <>
+                  <span className="oprice">{fmt(p.originalPrice)}</span>
+                  <span className="disc">{disc(p.price, p.originalPrice)}% off</span>
+                </>
+              )}
             </div>
             <button className="pcard-add" disabled={p.comingSoon || p.stock === 0}
               onClick={e => { e.stopPropagation(); if (!p.comingSoon) onAdd(p); }}>
