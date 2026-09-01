@@ -667,6 +667,24 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
     return () => obs.disconnect();
   }, []);
 
+  // On mobile the sticky "Add to Cart" bar overlaps the Tawk.to chat bubble
+  // in the bottom-right corner — hide the bubble while that bar is showing.
+  useEffect(() => {
+    if (typeof window === "undefined" || window.innerWidth > 1024) return;
+    const toggle = () => {
+      const api = window.Tawk_API;
+      if (!api || !api.hideWidget) return false;
+      try { if (stickyVisible) api.hideWidget(); else api.showWidget(); } catch {}
+      return true;
+    };
+    if (!toggle()) {
+      // Tawk not ready yet — retry once it loads
+      const prev = window.Tawk_API?.onLoad;
+      if (window.Tawk_API) window.Tawk_API.onLoad = function () { prev && prev(); toggle(); };
+    }
+    return () => { try { window.Tawk_API?.showWidget?.(); } catch {} };
+  }, [stickyVisible]);
+
   const szVariant = sizeList.find(s => s.name === sz);
   const activePrice = szVariant?.price !== undefined && szVariant.price !== "" ? +szVariant.price : p.price;
   const activeOriginalPrice = szVariant?.originalPrice !== undefined && szVariant.originalPrice !== "" ? +szVariant.originalPrice : p.originalPrice;
