@@ -404,7 +404,7 @@ function ProductModal({ product, onSave, onClose, categories }) {
 
   const handleSave = async () => {
     if (!form.name.trim()) { setError("Product name is required."); return; }
-    if (!form.price || !form.originalPrice) { setError("Price fields are required."); return; }
+    if (!form.price) { setError("Selling Price is required."); return; }
     setError("");
     setSaving(true);
     try {
@@ -414,7 +414,9 @@ function ProductModal({ product, onSave, onClose, categories }) {
         originalPrice: s.originalPrice !== "" && s.originalPrice != null ? +s.originalPrice : "",
         images: s.images || [],
       }));
-      await onSave({ ...form, sizes, price: +form.price, originalPrice: +form.originalPrice, stock: +form.stock });
+      // MRP is optional — fall back to the selling price so the storefront shows no discount
+      const originalPrice = form.originalPrice ? +form.originalPrice : +form.price;
+      await onSave({ ...form, sizes, price: +form.price, originalPrice, stock: +form.stock });
     } finally {
       setSaving(false);
     }
@@ -437,8 +439,8 @@ function ProductModal({ product, onSave, onClose, categories }) {
             </select>
           </div>
           <div className="admin-inp-grp">
-            <label>Original / MRP (₹) *</label>
-            <input type="number" value={form.originalPrice} onChange={e => set("originalPrice", e.target.value)} placeholder="1800"/>
+            <label>Original / MRP (₹)</label>
+            <input type="number" value={form.originalPrice} onChange={e => set("originalPrice", e.target.value)} placeholder="Optional — leave blank for no discount"/>
           </div>
           <div className="admin-inp-grp">
             <label>Selling Price (₹) *</label>
