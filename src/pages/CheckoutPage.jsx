@@ -399,6 +399,80 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
     flexShrink:0, boxShadow:"0 2px 8px rgba(21,101,192,.25)",
   };
 
+  // ── Coupon UI (rendered inside the Order Summary card) ──
+  const couponBox = (
+    <div className="ck-coupon-box">
+      {appliedCoupon ? (
+        <div className="coupon-applied">
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:"1.1rem"}}>🎟️</span>
+            <div>
+              <div style={{fontWeight:700,fontSize:".92rem",color:"#2D7D46"}}>{appliedCoupon.code}</div>
+              <div style={{fontSize:".78rem",color:"#2D7D46",marginTop:2}}>
+                You save {fmt(discount)}{appliedCoupon.type==="percent"?` (${appliedCoupon.value}% off)`:""}
+              </div>
+            </div>
+          </div>
+          <button type="button" onClick={removeCoupon} className="coupon-remove">✕ Remove</button>
+        </div>
+      ) : (
+        <div className="coupon-row">
+          <input className="coupon-input" placeholder="Enter coupon code" value={couponInput}
+            onChange={e=>{setCouponInput(e.target.value.toUpperCase());setCouponError("");}}
+            onKeyDown={e=>e.key==="Enter"&&(e.preventDefault(),handleApplyCoupon())}/>
+          <button type="button" className="admin-btn coupon-apply-btn"
+            onClick={handleApplyCoupon} disabled={couponLoading||!couponInput.trim()}>
+            {couponLoading?"…":"Apply"}
+          </button>
+        </div>
+      )}
+      {couponError&&<div className="coupon-error">{couponError}</div>}
+      {!appliedCoupon && (
+        <div style={{marginTop:10}}>
+          <button type="button" onClick={toggleAvailable}
+            style={{background:"none",border:"none",cursor:"pointer",color:"#E8620A",fontSize:".83rem",fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:5,fontFamily:"DM Sans,sans-serif"}}>
+            🎟️ View available coupons
+            <span style={{fontSize:".7rem",transition:"transform .2s",display:"inline-block",transform:showAvailable?"rotate(180deg)":"none"}}>▾</span>
+          </button>
+          {showAvailable && (
+            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
+              {availableCoupons===null ? (
+                <div style={{fontSize:".82rem",color:"var(--mt)"}}>Loading…</div>
+              ) : availableCoupons.length===0 ? (
+                <div style={{fontSize:".82rem",color:"var(--mt)"}}>No coupons available right now.</div>
+              ) : availableCoupons.map(c => {
+                const eligible=!c.minOrder||subtotal>=c.minOrder;
+                const discountText=c.type==="percent"?`${c.value}% off${c.maxDiscount?` (max ₹${c.maxDiscount})`:""}`:`₹${c.value} off`;
+                return (
+                  <div key={c.docId}
+                    style={{border:`1.5px dashed ${eligible?"#E8620A":"#D1C5BB"}`,borderRadius:10,padding:"10px 14px",
+                      background:eligible?"#FFFAF6":"#F8F4F0",
+                      display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,opacity:eligible?1:0.65}}>
+                    <div>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                        <span style={{fontFamily:"monospace",fontWeight:800,fontSize:".92rem",letterSpacing:".06em",color:"#18100A"}}>{c.code}</span>
+                        <span style={{fontSize:".73rem",fontWeight:700,color:"#E8620A"}}>{discountText}</span>
+                      </div>
+                      <div style={{fontSize:".75rem",color:"#6B4C38"}}>
+                        {c.minOrder>0?eligible?`Min order ₹${c.minOrder} ✓`:`Min order ₹${c.minOrder} — add ₹${c.minOrder-subtotal} more`:"No minimum order"}
+                      </div>
+                    </div>
+                    <button type="button" onClick={()=>quickApply(c.code)} disabled={!eligible}
+                      style={{padding:"6px 16px",border:"none",borderRadius:8,background:eligible?"#E8620A":"#D1C5BB",
+                        color:"#fff",fontWeight:700,fontSize:".8rem",cursor:eligible?"pointer":"not-allowed",
+                        fontFamily:"DM Sans,sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
+                      Apply
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <>
     <div className="ck-wrap">
@@ -533,86 +607,10 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
               </div>
             </div>
 
-            {/* ── Step 3 · Offers & Coupon ── */}
+            {/* ── Step 3 · Payment ── */}
             <div className="ck-section">
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
                 <div style={stepBadge}>3</div>
-                <h3 style={{margin:0,fontFamily:"Cormorant Garamond,serif",fontSize:"1.1rem",fontWeight:700,color:"var(--dk)"}}>Offers & Coupon</h3>
-              </div>
-              {appliedCoupon ? (
-                <div className="coupon-applied">
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{fontSize:"1.1rem"}}>🎟️</span>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:".92rem",color:"#2D7D46"}}>{appliedCoupon.code}</div>
-                      <div style={{fontSize:".78rem",color:"#2D7D46",marginTop:2}}>
-                        You save {fmt(discount)}{appliedCoupon.type==="percent"?` (${appliedCoupon.value}% off)`:""}
-                      </div>
-                    </div>
-                  </div>
-                  <button type="button" onClick={removeCoupon} className="coupon-remove">✕ Remove</button>
-                </div>
-              ) : (
-                <div className="coupon-row">
-                  <input className="coupon-input" placeholder="Enter coupon code" value={couponInput}
-                    onChange={e=>{setCouponInput(e.target.value.toUpperCase());setCouponError("");}}
-                    onKeyDown={e=>e.key==="Enter"&&(e.preventDefault(),handleApplyCoupon())}/>
-                  <button type="button" className="admin-btn coupon-apply-btn"
-                    onClick={handleApplyCoupon} disabled={couponLoading||!couponInput.trim()}>
-                    {couponLoading?"…":"Apply"}
-                  </button>
-                </div>
-              )}
-              {couponError&&<div className="coupon-error">{couponError}</div>}
-              {!appliedCoupon && (
-                <div style={{marginTop:10}}>
-                  <button type="button" onClick={toggleAvailable}
-                    style={{background:"none",border:"none",cursor:"pointer",color:"#E8620A",fontSize:".83rem",fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:5,fontFamily:"DM Sans,sans-serif"}}>
-                    🎟️ View available coupons
-                    <span style={{fontSize:".7rem",transition:"transform .2s",display:"inline-block",transform:showAvailable?"rotate(180deg)":"none"}}>▾</span>
-                  </button>
-                  {showAvailable && (
-                    <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
-                      {availableCoupons===null ? (
-                        <div style={{fontSize:".82rem",color:"var(--mt)"}}>Loading…</div>
-                      ) : availableCoupons.length===0 ? (
-                        <div style={{fontSize:".82rem",color:"var(--mt)"}}>No coupons available right now.</div>
-                      ) : availableCoupons.map(c => {
-                        const eligible=!c.minOrder||subtotal>=c.minOrder;
-                        const discountText=c.type==="percent"?`${c.value}% off${c.maxDiscount?` (max ₹${c.maxDiscount})`:""}`:`₹${c.value} off`;
-                        return (
-                          <div key={c.docId}
-                            style={{border:`1.5px dashed ${eligible?"#E8620A":"#D1C5BB"}`,borderRadius:10,padding:"10px 14px",
-                              background:eligible?"#FFFAF6":"#F8F4F0",
-                              display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,opacity:eligible?1:0.65}}>
-                            <div>
-                              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-                                <span style={{fontFamily:"monospace",fontWeight:800,fontSize:".92rem",letterSpacing:".06em",color:"#18100A"}}>{c.code}</span>
-                                <span style={{fontSize:".73rem",fontWeight:700,color:"#E8620A"}}>{discountText}</span>
-                              </div>
-                              <div style={{fontSize:".75rem",color:"#6B4C38"}}>
-                                {c.minOrder>0?eligible?`Min order ₹${c.minOrder} ✓`:`Min order ₹${c.minOrder} — add ₹${c.minOrder-subtotal} more`:"No minimum order"}
-                              </div>
-                            </div>
-                            <button type="button" onClick={()=>quickApply(c.code)} disabled={!eligible}
-                              style={{padding:"6px 16px",border:"none",borderRadius:8,background:eligible?"#E8620A":"#D1C5BB",
-                                color:"#fff",fontWeight:700,fontSize:".8rem",cursor:eligible?"pointer":"not-allowed",
-                                fontFamily:"DM Sans,sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
-                              Apply
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* ── Step 4 · Payment ── */}
-            <div className="ck-section">
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-                <div style={stepBadge}>4</div>
                 <h3 style={{margin:0,fontFamily:"Cormorant Garamond,serif",fontSize:"1.1rem",fontWeight:700,color:"var(--dk)"}}>Payment</h3>
               </div>
 
@@ -776,6 +774,8 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                   <div className="ck-item-price">{fmt(item.price * item.qty)}</div>
                 </div>
               ))}
+              <hr className="ck-divider"/>
+              {couponBox}
               <hr className="ck-divider"/>
               <div className="ck-row"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
               {discount > 0 && (
