@@ -17,12 +17,68 @@ const pushNotif = (userId, type, title, message, link = null, extra = {}) => {
 };
 
 // ── Order placed ──────────────────────────────────────────────────────────────
+const buildInvoiceText = (order) => {
+  const subtotal   = (order.items || []).reduce((s, i) => s + i.price * i.qty, 0);
+  const discount   = order.coupon?.discount || 0;
+  const taxable    = subtotal - discount;
+  const exclTax    = order.tax && !order.tax.inclusive ? (order.tax.amount || 0) : 0;
+  const inclTax    = order.tax &&  order.tax.inclusive ? (order.tax.amount || 0) : 0;
+  const shippingFee = order.total - taxable - exclTax;
+
+  const lines = (order.items || [])
+    .map(i => {
+      const opt = [i.selSize, i.selColor].filter(Boolean).join(" / ");
+      return `  • ${i.name}${opt ? ` (${opt})` : ""}\n    ${i.qty} × ${fmt(i.price)} = ${fmt(i.price * i.qty)}`;
+    })
+    .join("\n");
+
+  const totals = [
+    `  Subtotal: ${fmt(subtotal)}`,
+    discount > 0 ? `  Coupon (${order.coupon.code}): − ${fmt(discount)}` : null,
+    exclTax > 0 ? `  ${order.tax.label} (${order.tax.rate}%): + ${fmt(exclTax)}` : null,
+    `  Shipping (${order.ship === "express" ? "Express" : "Standard"}): ${shippingFee <= 0 ? "Free" : fmt(shippingFee)}`,
+    `  ─────────────────────────`,
+    `  Total: ${fmt(order.total)}`,
+    inclTax > 0 ? `  (incl. ${order.tax.label} ${order.tax.rate}%: ${fmt(inclTax)})` : null,
+  ].filter(Boolean).join("\n");
+
+  const a = order.addr || {};
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const invoiceLink = origin ? `${origin}/track?id=${order.id}` : "";
+
+  return (
+`Hi ${a.name || "there"},
+
+Thank you for your order! 🎉 Here is your invoice.
+
+INVOICE  ·  ${order.id}
+Date: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
+
+Items:
+${lines}
+
+${totals}
+
+Bill / Ship to:
+  ${a.name}
+  ${a.line1}
+  ${a.city}, ${a.state} – ${a.pin}
+  ${a.phone}
+
+Shipping: ${order.ship === "express" ? "Express (2–3 business days)" : "Standard (5–7 business days)"}
+Payment: ${order.paymentStatus === "paid" ? "Paid online" : order.paymentStatus === "wallet" ? "Paid via wallet" : "Cash on delivery"}
+${order.walletApplied ? `Wallet applied: ${fmt(order.walletApplied)}\n` : ""}${invoiceLink ? `\nView or download your invoice anytime:\n${invoiceLink}\n(or from your account → Orders)\n` : ""}
+We'll send you an update once it ships.
+
+— Telugu Seemalo`
+  );
+};
+
 export const notifyOrderPlaced = (order) => {
-  const items = (order.items || []).map(i => `  • ${i.name} × ${i.qty} — ${fmt(i.price * i.qty)}`).join("\n");
   sendEmail(
     order.userEmail,
-    `Order Confirmed – ${order.id}`,
-    `Hi ${order.addr?.name || "there"},\n\nThank you for your order! 🎉\n\nOrder ID: ${order.id}\n\nItems:\n${items}\n\nShipping: ${order.ship === "express" ? "Express (2–3 days)" : "Standard (5–7 days)"}\nTotal: ${fmt(order.total)}\n\nWe'll send you an update once it ships.`
+    `Invoice & Order Confirmation – ${order.id}`,
+    buildInvoiceText(order)
   );
   sendAdminEmail(
     `New Order – ${order.id}`,

@@ -45,6 +45,13 @@ export default function TrackOrderPage({ user, setPage }) {
     setSearching(false);
   };
 
+  // Auto-track when arriving from an invoice link e.g. /track?id=TS679845
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (id) { setQuery(id.toUpperCase()); search(null, id.trim()); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const statusIdx = result ? STATUS_ORDER[result.status] : -1;
 
   return (
