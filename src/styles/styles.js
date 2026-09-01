@@ -308,6 +308,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .pd-amazon-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:#232F3E;color:#fff;border:1.5px solid #232F3E;padding:11px 20px;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;margin-bottom:18px;font-family:'DM Sans',sans-serif;}
 .pd-amazon-btn:hover{background:#374357;border-color:#374357;transform:translateY(-1px);}
 .pd-amazon-logo{font-family:Arial,sans-serif;font-weight:700;font-size:.95rem;color:#FF9900;letter-spacing:.01em;}
+.pd-customize-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:#fff;color:var(--sf);border:1.5px solid var(--sf);padding:11px 20px;border-radius:10px;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:18px;font-family:'DM Sans',sans-serif;}
+.pd-customize-btn:hover{background:var(--sf);color:#fff;transform:translateY(-1px);}
 
 /* Delivery estimate */
 .pd-delivery{background:linear-gradient(135deg,#F4EDE5,#FFF8F2);border:1px solid rgba(232,98,10,.14);border-radius:10px;padding:12px 14px;margin:14px 0;}

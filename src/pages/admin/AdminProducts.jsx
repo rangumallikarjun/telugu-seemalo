@@ -8,7 +8,7 @@ import ImageCropModal from "../../components/ImageCropModal";
 
 const EMPTY = {
   id: Date.now(), name: "", category: "Pots", price: "", originalPrice: "",
-  description: "", stock: "", isNew: false, featured: false, comingSoon: false,
+  description: "", stock: "", isNew: false, featured: false, comingSoon: false, customizable: false,
   sizes: [], colors: [], features: [], specs: [], sg: [],
   images: [], video: "", amazonUrl: "",
 };
@@ -495,6 +495,14 @@ function ProductModal({ product, onSave, onClose, categories }) {
             style={{width:16,height:16,flexShrink:0,accentColor:"#E8620A"}}/>
           <label htmlFor="comingsoon" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>
             Mark as "Coming Soon" (hides Add to Cart, shows badge)
+          </label>
+        </div>
+
+        <div className="admin-inp-grp" style={{display:"flex",alignItems:"center",gap:10}}>
+          <input type="checkbox" id="customizable" checked={!!form.customizable} onChange={e => set("customizable", e.target.checked)}
+            style={{width:16,height:16,flexShrink:0,accentColor:"#E8620A"}}/>
+          <label htmlFor="customizable" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>
+            Show a "Customize" button (customer enters sizes / details, sent to store on WhatsApp)
           </label>
         </div>
 
