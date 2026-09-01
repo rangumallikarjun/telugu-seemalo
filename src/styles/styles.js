@@ -439,6 +439,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .ship-opt-name{font-weight:600;font-size:.9rem;}
 .ship-opt-det{font-size:.78rem;color:var(--mt);}
 .ship-opt-price{font-weight:700;font-size:.9rem;}
+.ck-sec-hd{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.ck-coupon-box{margin:2px 0;}
+
+/* Laptop / desktop: compress checkout so all 3 steps + summary fit one screen */
+@media(min-width:1025px){
+  .ck-wrap{max-width:1120px;padding:16px 20px 24px;}
+  .ck-grid{grid-template-columns:1fr 340px;gap:22px;align-items:start;}
+  .ck-title{font-size:1.4rem!important;margin-bottom:12px!important;}
+  .ck-section{padding:14px 16px;margin-bottom:12px;}
+  .ck-sum-card{padding:16px 18px;}
+  .ck-summary h3{font-size:1.15rem;margin-bottom:12px;}
+  .ck-sec-hd{margin-bottom:10px!important;}
+  .inp-grp{margin-bottom:9px;}
+  .inp-grp label{margin-bottom:2px;font-size:.7rem;}
+  .inp-grp input,.ck-form select{padding:7px 10px!important;font-size:.86rem!important;}
+  /* Delivery-address fields two per row */
+  .ck-form>.ck-section:first-child{display:flex;flex-wrap:wrap;gap:0 12px;}
+  .ck-form>.ck-section:first-child>*{flex:1 1 100%;}
+  .ck-form>.ck-section:first-child>.inp-grp{flex:1 1 calc(50% - 6px);}
+  .ck-form>.ck-section:first-child>.form-row{gap:12px;}
+  /* Shipping options side by side */
+  .ship-opts{flex-direction:row;}
+  .ship-opt{flex:1;padding:10px 12px;}
+  /* Order summary tighter */
+  .ck-item{margin-bottom:8px;padding-bottom:8px;}
+  .ck-item-img{width:40px;height:40px;}
+  .ck-divider{margin:9px 0;}
+  .ck-row{margin-bottom:5px;font-size:.84rem;}
+  .pay-btn{padding:11px;margin-top:10px;}
+}
 
 /* SUCCESS */
 .succ-wrap{max-width:540px;margin:60px auto;padding:40px 24px;text-align:center;}

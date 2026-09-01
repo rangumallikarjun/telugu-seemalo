@@ -477,14 +477,14 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
     <>
     <div className="ck-wrap">
       <button className="pd-back" onClick={() => setPage("shop")}>← Continue Shopping</button>
-      <h2 style={{fontFamily:"Cormorant Garamond,serif",fontSize:"1.8rem",fontWeight:700,marginBottom:28}}>Checkout</h2>
+      <h2 className="ck-title" style={{fontFamily:"Cormorant Garamond,serif",fontSize:"1.8rem",fontWeight:700,marginBottom:28}}>Checkout</h2>
       <form onSubmit={placeOrder}>
         <div className="ck-grid">
           <div className="ck-form">
 
             {/* ── Step 1 · Delivery Address ── */}
             <div className="ck-section">
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div className="ck-sec-hd" style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
                 <div style={stepBadge}>1</div>
                 <h3 style={{margin:0,fontFamily:"Cormorant Garamond,serif",fontSize:"1.1rem",fontWeight:700,color:"var(--dk)"}}>Delivery Address</h3>
               </div>
@@ -584,7 +584,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
 
             {/* ── Step 2 · Shipping Method ── */}
             <div className="ck-section">
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div className="ck-sec-hd" style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
                 <div style={stepBadge}>2</div>
                 <h3 style={{margin:0,fontFamily:"Cormorant Garamond,serif",fontSize:"1.1rem",fontWeight:700,color:"var(--dk)"}}>Shipping Method</h3>
               </div>
@@ -609,7 +609,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
 
             {/* ── Step 3 · Payment ── */}
             <div className="ck-section">
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div className="ck-sec-hd" style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
                 <div style={stepBadge}>3</div>
                 <h3 style={{margin:0,fontFamily:"Cormorant Garamond,serif",fontSize:"1.1rem",fontWeight:700,color:"var(--dk)"}}>Payment</h3>
               </div>
