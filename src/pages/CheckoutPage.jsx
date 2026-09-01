@@ -477,7 +477,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
     <>
     <div className="ck-wrap">
       <button className="pd-back" onClick={() => setPage("shop")}>← Continue Shopping</button>
-      <h2 className="ck-title" style={{fontFamily:"Cormorant Garamond,serif",fontSize:"1.8rem",fontWeight:700,marginBottom:28}}>Checkout</h2>
+      <h2 className="ck-page-title" style={{fontFamily:"Cormorant Garamond,serif",fontSize:"1.8rem",fontWeight:700,marginBottom:28,color:"var(--dk)"}}>Checkout</h2>
       <form onSubmit={placeOrder}>
         <div className="ck-grid">
           <div className="ck-form">

@@ -446,7 +446,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 @media(min-width:1025px){
   .ck-wrap{max-width:1120px;padding:16px 20px 24px;}
   .ck-grid{grid-template-columns:1fr 340px;gap:22px;align-items:start;}
-  .ck-title{font-size:1.4rem!important;margin-bottom:12px!important;}
+  .ck-page-title{font-size:1.4rem!important;margin-bottom:12px!important;}
   .ck-section{padding:14px 16px;margin-bottom:12px;}
   .ck-sum-card{padding:16px 18px;}
   .ck-summary h3{font-size:1.15rem;margin-bottom:12px;}
