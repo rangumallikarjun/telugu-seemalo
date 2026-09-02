@@ -57,15 +57,21 @@ export default function RazorpayModal({ amount, purpose = "Payment", prefill = {
 
     // Ask our backend for a real order + a Razorpay customer id. With these,
     // Razorpay Checkout shows the "Saved Cards" section and a "Save card"
-    // option. If the backend isn't reachable (e.g. guest, functions not
-    // deployed) we fall back to a plain amount-only checkout so payments
-    // still work — just without saved cards.
+    // option. We only USE the server response when it also returns `keyId`
+    // (i.e. the updated Cloud Function is deployed) — otherwise a key /
+    // account mismatch between the order and the client key would stop
+    // Checkout from opening at all. No server order → plain amount-only
+    // checkout, exactly as before.
     let server = null;
     try {
-      const res = await createRazorpayOrder({ amount, purpose, customer: prefill });
-      server = res.data;
+      const res = await Promise.race([
+        createRazorpayOrder({ amount, purpose, customer: prefill }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000)),
+      ]);
+      const d = res?.data;
+      if (d && d.orderId && d.keyId) server = d;
     } catch (err) {
-      console.warn("[Razorpay] order/customer setup unavailable, using basic checkout:", err.message);
+      console.warn("[Razorpay] server order unavailable, using basic checkout:", err.message);
     }
 
     const options = {
