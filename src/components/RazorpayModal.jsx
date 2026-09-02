@@ -27,6 +27,17 @@ export default function RazorpayModal({ amount, purpose = "Payment", prefill = {
 
   useEffect(() => { openCheckout(); }, []); // eslint-disable-line
 
+  // Razorpay's checkout.js locks page scroll (body overflow + padding) while
+  // its iframe is open and, on dismiss, occasionally fails to restore it —
+  // leaving the page underneath unscrollable. Force-clean on unmount.
+  useEffect(() => () => {
+    document.body.style.overflow = "";
+    document.body.style.paddingRight = "";
+    document.documentElement.style.overflow = "";
+    document.querySelectorAll(".razorpay-container, .razorpay-backdrop")
+      .forEach(el => el.remove());
+  }, []);
+
   const openCheckout = async () => {
     setStatus("loading");
     setError("");
