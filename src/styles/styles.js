@@ -425,6 +425,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--dk);}
 .ck-item-name{font-size:.88rem;font-weight:600;margin-bottom:3px;}
 .ck-item-opt{font-size:.78rem;color:var(--mt);}
 .ck-item-price{font-weight:700;font-size:.92rem;align-self:center;flex-shrink:0;}
+.ck-item-controls{display:flex;align-items:center;gap:12px;margin-top:7px;}
+.ck-qty{display:inline-flex;align-items:center;border:1.5px solid var(--bd);border-radius:7px;overflow:hidden;}
+.ck-qty button{width:24px;height:24px;border:none;background:#F8F4F0;color:var(--dk);font-size:1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;}
+.ck-qty button:hover:not(:disabled){background:#EFE7DD;}
+.ck-qty button:disabled{opacity:.4;cursor:not-allowed;}
+.ck-qty span{min-width:28px;text-align:center;font-size:.82rem;font-weight:700;}
+.ck-item-remove{background:none;border:none;color:#C0392B;font-size:.76rem;font-weight:600;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif;}
+.ck-item-remove:hover{text-decoration:underline;}
 .ck-divider{border:none;border-top:1px solid var(--bd);margin:14px 0;}
 .ck-row{display:flex;justify-content:space-between;font-size:.88rem;color:var(--mt);margin-bottom:8px;}
 .ck-row.total{font-size:1.05rem;font-weight:700;color:var(--dk);}

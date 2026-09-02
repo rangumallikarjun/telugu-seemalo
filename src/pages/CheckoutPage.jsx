@@ -230,6 +230,15 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
     }));
   };
 
+  const changeQty = (cartId, delta) => setCart(prev => prev.flatMap(i => {
+    if (i.cartId !== cartId) return [i];
+    const next = i.qty + delta;
+    if (next <= 0) return [];
+    const max = i.stock || 99;
+    return [{ ...i, qty: Math.min(next, max) }];
+  }));
+  const removeItem = (cartId) => setCart(prev => prev.filter(i => i.cartId !== cartId));
+
   const subtotal    = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const isFree      = cfg.enableFreeShipping && subtotal >= cfg.freeAbove;
   const shippingFee = ship === "express" ? cfg.expressFee : (isFree ? 0 : cfg.standardFee);
@@ -773,7 +782,18 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                   </div>
                   <div className="ck-item-info">
                     <div className="ck-item-name">{item.name}</div>
-                    <div className="ck-item-opt">{[item.selSize, item.selColor].filter(Boolean).join(" · ")} · Qty {item.qty}</div>
+                    {(item.selSize || item.selColor) && (
+                      <div className="ck-item-opt">{[item.selSize, item.selColor].filter(Boolean).join(" · ")}</div>
+                    )}
+                    <div className="ck-item-controls">
+                      <div className="ck-qty">
+                        <button type="button" onClick={() => changeQty(item.cartId, -1)} aria-label="Decrease quantity">−</button>
+                        <span>{item.qty}</span>
+                        <button type="button" onClick={() => changeQty(item.cartId, +1)}
+                          disabled={!!item.stock && item.qty >= item.stock} aria-label="Increase quantity">+</button>
+                      </div>
+                      <button type="button" className="ck-item-remove" onClick={() => removeItem(item.cartId)}>Remove</button>
+                    </div>
                   </div>
                   <div className="ck-item-price">{fmt(item.price * item.qty)}</div>
                 </div>
