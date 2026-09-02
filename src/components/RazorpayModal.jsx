@@ -1,4 +1,10 @@
 import { useEffect, useState } from "react";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app } from "../firebase/config";
+
+const fns = getFunctions(app);
+const createRazorpayOrder   = httpsCallable(fns, "createRazorpayOrder");
+const verifyRazorpayPayment = httpsCallable(fns, "verifyRazorpayPayment");
 
 const fmt = (n) =>
   "₹" + Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -49,18 +55,44 @@ export default function RazorpayModal({ amount, purpose = "Payment", prefill = {
       return;
     }
 
+    // Ask our backend for a real order + a Razorpay customer id. With these,
+    // Razorpay Checkout shows the "Saved Cards" section and a "Save card"
+    // option. If the backend isn't reachable (e.g. guest, functions not
+    // deployed) we fall back to a plain amount-only checkout so payments
+    // still work — just without saved cards.
+    let server = null;
+    try {
+      const res = await createRazorpayOrder({ amount, purpose, customer: prefill });
+      server = res.data;
+    } catch (err) {
+      console.warn("[Razorpay] order/customer setup unavailable, using basic checkout:", err.message);
+    }
+
     const options = {
-      key:         process.env.REACT_APP_RAZORPAY_KEY_ID,
-      amount:      Math.round(amount * 100),
+      key:         server?.keyId || process.env.REACT_APP_RAZORPAY_KEY_ID,
+      amount:      server?.amount || Math.round(amount * 100),
       currency:    "INR",
       name:        "Telugu Seemalo",
       description: purpose,
       image:       "",
       theme:       { color: "#E8620A" },
-      // Let Razorpay remember this customer's cards/UPI against their contact
-      // number, so on a later payment it can show their saved card itself.
       remember_customer: true,
-      handler: (response) => {
+      ...(server?.orderId    ? { order_id:    server.orderId }    : {}),
+      ...(server?.customerId ? { customer_id: server.customerId } : {}),
+      handler: async (response) => {
+        // Verify the signature server-side when we have a real order
+        if (server?.orderId && response.razorpay_signature) {
+          try {
+            await verifyRazorpayPayment({
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+              amount, purpose,
+            });
+          } catch (err) {
+            console.warn("[Razorpay] verify failed (payment still captured):", err.message);
+          }
+        }
         onSuccess(response.razorpay_payment_id);
       },
       modal: {

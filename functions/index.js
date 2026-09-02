@@ -38,7 +38,30 @@ async function getSRToken() {
 }
 const RZP_WH_SECRET   = defineSecret("RAZORPAY_WEBHOOK_SECRET");
 
-// ── Create Razorpay order ───────────────────────────────────────────────────
+// ── Shared: get or create this user's Razorpay customer (for saved cards) ─────
+async function ensureRazorpayCustomer(rzp, uid, contactInfo = {}) {
+  const userRef  = admin.firestore().doc(`users/${uid}`);
+  const userSnap = await userRef.get();
+  let customerId = userSnap.exists ? userSnap.get("razorpayCustomerId") : null;
+  if (customerId) return customerId;
+
+  const { name, email, contact } = contactInfo;
+  try {
+    const cust = await rzp.customers.create({
+      name:          (name || email || "Customer").slice(0, 50),
+      email:         email || undefined,
+      contact:       (contact || "").replace(/[^\d+]/g, "") || undefined,
+      fail_existing: 0, // reuse an existing customer with the same email/contact
+    });
+    customerId = cust.id;
+    await userRef.set({ razorpayCustomerId: customerId }, { merge: true });
+  } catch (err) {
+    console.error("ensureRazorpayCustomer failed:", err.message);
+  }
+  return customerId;
+}
+
+// ── Create Razorpay order (+ ensure customer so cards can be saved) ──────────
 exports.createRazorpayOrder = onCall(
   { secrets: [RZP_KEY_ID, RZP_KEY_SECRET] },
   async (request) => {
@@ -50,6 +73,10 @@ exports.createRazorpayOrder = onCall(
       key_secret: RZP_KEY_SECRET.value(),
     });
 
+    const customerId = await ensureRazorpayCustomer(
+      rzp, request.auth.uid, request.data.customer || {},
+    );
+
     const order = await rzp.orders.create({
       amount:   Math.round(request.data.amount * 100),
       currency: "INR",
@@ -57,7 +84,60 @@ exports.createRazorpayOrder = onCall(
       notes:    { purpose: request.data.purpose || "payment", uid: request.auth.uid },
     });
 
-    return { orderId: order.id, amount: order.amount, currency: order.currency };
+    return {
+      orderId:    order.id,
+      amount:     order.amount,
+      currency:   order.currency,
+      customerId: customerId || null,
+      keyId:      RZP_KEY_ID.value(),
+    };
+  }
+);
+
+// ── List / delete the customer's saved cards (masked info only) ──────────────
+exports.listRazorpayCards = onCall(
+  { secrets: [RZP_KEY_ID, RZP_KEY_SECRET] },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+    const snap = await admin.firestore().doc(`users/${request.auth.uid}`).get();
+    const customerId = snap.exists ? snap.get("razorpayCustomerId") : null;
+    if (!customerId) return { cards: [] };
+
+    const rzp = new Razorpay({ key_id: RZP_KEY_ID.value(), key_secret: RZP_KEY_SECRET.value() });
+    try {
+      const res = await rzp.customers.fetchTokens(customerId);
+      const cards = (res.items || [])
+        .filter(t => t.method === "card" && t.card)
+        .map(t => ({
+          id:       t.id,
+          last4:    t.card.last4,
+          network:  t.card.network,
+          type:     t.card.type,
+          issuer:   t.card.issuer,
+          expiry:   `${t.card.expiry_month || ""}/${t.card.expiry_year || ""}`.replace(/^\/$/, ""),
+        }));
+      return { cards };
+    } catch (err) {
+      console.error("listRazorpayCards failed:", err.message);
+      return { cards: [] };
+    }
+  }
+);
+
+exports.deleteRazorpayCard = onCall(
+  { secrets: [RZP_KEY_ID, RZP_KEY_SECRET] },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+    const { tokenId } = request.data || {};
+    if (!tokenId) throw new HttpsError("invalid-argument", "tokenId is required");
+
+    const snap = await admin.firestore().doc(`users/${request.auth.uid}`).get();
+    const customerId = snap.exists ? snap.get("razorpayCustomerId") : null;
+    if (!customerId) throw new HttpsError("not-found", "No saved cards");
+
+    const rzp = new Razorpay({ key_id: RZP_KEY_ID.value(), key_secret: RZP_KEY_SECRET.value() });
+    await rzp.customers.deleteToken(customerId, tokenId);
+    return { deleted: true };
   }
 );
 
