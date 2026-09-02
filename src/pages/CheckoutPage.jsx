@@ -473,6 +473,98 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
     </div>
   );
 
+  // ── Wallet UI (rendered inside the Order Summary card) ──
+  const walletBox = user?.uid ? (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontWeight:700,fontSize:".88rem",color:"var(--dk)",display:"flex",alignItems:"center",gap:7}}>
+          💰 Wallet
+          {walletBalance > 0
+            ? <span style={{fontWeight:700,color:"#2D7D46",fontSize:".85rem"}}>{fmt(walletBalance)} available</span>
+            : <span style={{fontWeight:400,color:"var(--mt)",fontSize:".82rem"}}>₹0 balance</span>}
+        </div>
+        <button type="button" onClick={()=>setTopUpOpen(v=>!v)}
+          style={{border:"1px solid #BFDBFE",borderRadius:8,padding:"4px 12px",
+            cursor:"pointer",fontSize:".78rem",color:"#1565C0",fontWeight:600,fontFamily:"DM Sans,sans-serif",
+            background:"#EFF6FF",transition:"all .15s"}}>
+          {topUpOpen?"✕ Cancel":"⚡ Top Up"}
+        </button>
+      </div>
+
+      {walletBalance > 0 && (
+        <div style={{background:useWallet?"#E8F5E9":"#F8F4F0",border:`1.5px solid ${useWallet?"#A8D5B5":"var(--bd)"}`,
+          borderRadius:12,padding:"12px 14px",marginBottom:topUpOpen?12:0,transition:"all .2s"}}>
+          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+            <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${useWallet?"#2D7D46":"var(--bd)"}`,
+              background:useWallet?"#2D7D46":"#fff",display:"flex",alignItems:"center",justifyContent:"center",
+              flexShrink:0,transition:"all .15s"}}>
+              {useWallet&&<span style={{color:"#fff",fontSize:".78rem",lineHeight:1}}>✓</span>}
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:".86rem",color:"var(--dk)"}}>
+                Use wallet balance
+              </div>
+              {useWallet && (
+                <div style={{fontSize:".76rem",color:"#2D7D46",marginTop:2,fontWeight:600}}>
+                  {walletApplied>=total
+                    ? "✅ Full order covered — nothing extra to pay!"
+                    : `💚 ${fmt(walletApplied)} applied · pay ${fmt(amountToPay)} online`}
+                </div>
+              )}
+            </div>
+            <input type="checkbox" checked={useWallet} onChange={e=>setUseWallet(e.target.checked)} style={{display:"none"}}/>
+          </label>
+        </div>
+      )}
+
+      {topUpOpen && (
+        <div style={{background:"#F8FAFC",border:"1.5px solid #BFDBFE",borderRadius:12,padding:14,marginTop:walletBalance>0?0:0}}>
+          <div style={{fontWeight:700,fontSize:".8rem",color:"#0F1E4A",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+            🔒 Add Money via Razorpay
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+            {[100,250,500,1000,2000].map(a=>(
+              <button key={a} type="button" onClick={()=>setRzpAmt(String(a))}
+                style={{padding:"5px 12px",borderRadius:18,border:`1.5px solid ${rzpAmt===String(a)?"#1565C0":"var(--bd)"}`,
+                  background:rzpAmt===String(a)?"#EAF2FF":"#fff",
+                  color:rzpAmt===String(a)?"#1565C0":"var(--mt)",
+                  fontWeight:rzpAmt===String(a)?700:400,
+                  cursor:"pointer",fontSize:".78rem",fontFamily:"DM Sans,sans-serif",transition:"all .15s"}}>
+                ₹{a}
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <div style={{position:"relative",flex:1}}>
+              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",
+                fontWeight:700,color:"#1565C0",fontSize:".9rem"}}>₹</span>
+              <input type="number" min={10} placeholder="Amount (min ₹10)"
+                value={rzpAmt} onChange={e=>setRzpAmt(e.target.value)}
+                style={{width:"100%",padding:"9px 12px 9px 26px",border:"1.5px solid var(--bd)",borderRadius:9,
+                  fontSize:".86rem",fontFamily:"DM Sans,sans-serif",outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            <button type="button"
+              onClick={()=>{ if(parseFloat(rzpAmt)>=10) setRzpOpen(true); }}
+              disabled={!rzpAmt||parseFloat(rzpAmt)<10}
+              style={{padding:"9px 16px",border:"none",borderRadius:9,
+                background:!rzpAmt||parseFloat(rzpAmt)<10?"#94A3B8":"linear-gradient(135deg,#0F1E4A,#1565C0)",
+                color:"#fff",fontWeight:700,
+                cursor:!rzpAmt||parseFloat(rzpAmt)<10?"not-allowed":"pointer",
+                fontSize:".82rem",fontFamily:"DM Sans,sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
+              {rzpAmt&&parseFloat(rzpAmt)>=10?`Pay ₹${parseFloat(rzpAmt).toLocaleString("en-IN")}`:"Pay Now"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {walletError && (
+        <div style={{marginTop:8,background:"#FDECEA",color:"#C0392B",borderRadius:8,padding:"8px 12px",fontSize:".82rem"}}>
+          ⚠️ {walletError}
+        </div>
+      )}
+    </div>
+  ) : null;
+
   return (
     <>
     <div className="ck-wrap">
@@ -659,100 +751,12 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                 </div>
               )}
 
-              {/* Wallet */}
-              {user?.uid && (
-                <div style={{borderTop:savedPayMethods.length>0?"1px solid var(--bd)":"none",paddingTop:savedPayMethods.length>0?14:0}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <div style={{fontWeight:700,fontSize:".88rem",color:"var(--dk)",display:"flex",alignItems:"center",gap:7}}>
-                      💰 Wallet
-                      {walletBalance > 0
-                        ? <span style={{fontWeight:700,color:"#2D7D46",fontSize:".85rem"}}>{fmt(walletBalance)} available</span>
-                        : <span style={{fontWeight:400,color:"var(--mt)",fontSize:".82rem"}}>₹0 balance</span>}
-                    </div>
-                    <button type="button" onClick={()=>setTopUpOpen(v=>!v)}
-                      style={{border:"1px solid var(--bd)",borderRadius:8,padding:"4px 12px",
-                        cursor:"pointer",fontSize:".78rem",color:"#1565C0",fontWeight:600,fontFamily:"DM Sans,sans-serif",
-                        borderColor:"#BFDBFE",background:"#EFF6FF",transition:"all .15s"}}
-                      onMouseEnter={e=>{e.currentTarget.style.background="#DBEAFE";e.currentTarget.style.borderColor="#93C5FD";}}
-                      onMouseLeave={e=>{e.currentTarget.style.background="#EFF6FF";e.currentTarget.style.borderColor="#BFDBFE";}}>
-                      {topUpOpen?"✕ Cancel":"⚡ Top Up"}
-                    </button>
-                  </div>
-
-                  {walletBalance > 0 && (
-                    <div style={{background:useWallet?"#E8F5E9":"#F8F4F0",border:`1.5px solid ${useWallet?"#A8D5B5":"var(--bd)"}`,
-                      borderRadius:12,padding:"12px 14px",marginBottom:topUpOpen?12:0,transition:"all .2s"}}>
-                      <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
-                        <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${useWallet?"#2D7D46":"var(--bd)"}`,
-                          background:useWallet?"#2D7D46":"#fff",display:"flex",alignItems:"center",justifyContent:"center",
-                          flexShrink:0,transition:"all .15s"}}>
-                          {useWallet&&<span style={{color:"#fff",fontSize:".78rem",lineHeight:1}}>✓</span>}
-                        </div>
-                        <div style={{flex:1}}>
-                          <div style={{fontWeight:700,fontSize:".88rem",color:"var(--dk)"}}>
-                            Use wallet balance &nbsp;
-                            <span style={{color:"#2D7D46"}}>{fmt(walletBalance)} available</span>
-                          </div>
-                          {useWallet && (
-                            <div style={{fontSize:".78rem",color:"#2D7D46",marginTop:2,fontWeight:600}}>
-                              {walletApplied>=total
-                                ? "✅ Full order covered — nothing extra to pay!"
-                                : `💚 ${fmt(walletApplied)} will be deducted · Pay ${fmt(amountToPay)} externally`}
-                            </div>
-                          )}
-                        </div>
-                        <input type="checkbox" checked={useWallet} onChange={e=>setUseWallet(e.target.checked)} style={{display:"none"}}/>
-                      </label>
-                    </div>
-                  )}
-
-                  {topUpOpen && (
-                    <div style={{background:"#F8FAFC",border:"1.5px solid #BFDBFE",borderRadius:12,padding:16,marginTop:walletBalance>0?0:0}}>
-                      <div style={{fontWeight:700,fontSize:".82rem",color:"#0F1E4A",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
-                        🔒 Add Money via Razorpay
-                      </div>
-                      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                        {[100,250,500,1000,2000].map(a=>(
-                          <button key={a} type="button" onClick={()=>setRzpAmt(String(a))}
-                            style={{padding:"5px 14px",borderRadius:18,border:`1.5px solid ${rzpAmt===String(a)?"#1565C0":"var(--bd)"}`,
-                              background:rzpAmt===String(a)?"#EAF2FF":"#fff",
-                              color:rzpAmt===String(a)?"#1565C0":"var(--mt)",
-                              fontWeight:rzpAmt===String(a)?700:400,
-                              cursor:"pointer",fontSize:".8rem",fontFamily:"DM Sans,sans-serif",transition:"all .15s"}}>
-                            ₹{a}
-                          </button>
-                        ))}
-                      </div>
-                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                        <div style={{position:"relative",flex:1}}>
-                          <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",
-                            fontWeight:700,color:"#1565C0",fontSize:".9rem"}}>₹</span>
-                          <input type="number" min={10} placeholder="Amount (min ₹10)"
-                            value={rzpAmt} onChange={e=>setRzpAmt(e.target.value)}
-                            style={{width:"100%",padding:"9px 12px 9px 26px",border:"1.5px solid var(--bd)",borderRadius:9,
-                              fontSize:".88rem",fontFamily:"DM Sans,sans-serif",outline:"none",boxSizing:"border-box"}}/>
-                        </div>
-                        <button type="button"
-                          onClick={()=>{ if(parseFloat(rzpAmt)>=10) setRzpOpen(true); }}
-                          disabled={!rzpAmt||parseFloat(rzpAmt)<10}
-                          style={{padding:"9px 18px",border:"none",borderRadius:9,
-                            background:!rzpAmt||parseFloat(rzpAmt)<10?"#94A3B8":"linear-gradient(135deg,#0F1E4A,#1565C0)",
-                            color:"#fff",fontWeight:700,
-                            cursor:!rzpAmt||parseFloat(rzpAmt)<10?"not-allowed":"pointer",
-                            fontSize:".85rem",fontFamily:"DM Sans,sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
-                          {rzpAmt&&parseFloat(rzpAmt)>=10?`Pay ₹${parseFloat(rzpAmt).toLocaleString("en-IN")}`:"Pay Now"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {walletError && (
-                    <div style={{marginTop:8,background:"#FDECEA",color:"#C0392B",borderRadius:8,padding:"8px 12px",fontSize:".84rem"}}>
-                      ⚠️ {walletError}
-                    </div>
-                  )}
-                </div>
-              )}
+              <div style={{fontSize:".82rem",color:"var(--mt)",lineHeight:1.55,
+                borderTop:savedPayMethods.length>0?"1px solid var(--bd)":"none",
+                paddingTop:savedPayMethods.length>0?14:0}}>
+                💳 Pay securely by UPI, card, netbanking or wallet in the Razorpay window after you tap
+                <strong> Pay</strong>{user?.uid ? " — or apply your wallet balance in the Order Summary" : ""}.
+              </div>
             </div>
           </div>
 
@@ -793,8 +797,16 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
               <div className="ck-row"><span>Shipping</span><span>{shippingFee === 0 ? "Free" : fmt(shippingFee)}</span></div>
               <hr className="ck-divider"/>
               <div className="ck-row total"><span>Order Total</span><span>{fmt(total)}</span></div>
+
+              {walletBox && (
+                <>
+                  <hr className="ck-divider"/>
+                  {walletBox}
+                </>
+              )}
+
               {walletApplied > 0 && (
-                <div className="ck-row" style={{color:"#2D7D46",fontWeight:700}}>
+                <div className="ck-row" style={{color:"#2D7D46",fontWeight:700,marginTop:8}}>
                   <span>💰 Wallet</span>
                   <span>− {fmt(walletApplied)}</span>
                 </div>
