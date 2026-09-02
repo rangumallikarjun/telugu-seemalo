@@ -52,7 +52,10 @@ const pathToPage = (pathname) => {
 
 export default function App() {
   const [page, setPageState]    = useState(() => pathToPage(window.location.pathname));
-  const [cart, setCart]         = useState([]);
+  const [cart, setCart]         = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ts_cart")) || []; }
+    catch { return []; }
+  });
   const [cartOpen, setCartOpen] = useState(false);
   const [authMode, setAuthMode] = useState(null);
   const [user, setUser]         = useState(null);
@@ -63,6 +66,17 @@ export default function App() {
   const [products, setProducts]     = useState([]);
 
   useEffect(() => { getProducts().then(setProducts); }, []);
+
+  // Persist the cart so a page reload (e.g. on /checkout) keeps its items
+  useEffect(() => {
+    try { localStorage.setItem("ts_cart", JSON.stringify(cart)); } catch { /* quota / private mode */ }
+  }, [cart]);
+
+  // Safety net: never let a stuck body-scroll lock (set by the 3D Room Builder)
+  // leak onto other pages such as checkout
+  useEffect(() => {
+    if (page !== "room") document.body.style.overflow = "";
+  }, [page]);
 
   // Apply admin-configured SEO settings to the document head
   useEffect(() => {
