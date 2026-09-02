@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "../firebase/config";
 
@@ -30,6 +30,7 @@ function loadRazorpayScript() {
 export default function RazorpayModal({ amount, purpose = "Payment", prefill = {}, onSuccess, onClose }) {
   const [status, setStatus] = useState("loading");
   const [error,  setError]  = useState("");
+  const resolvedRef = useRef(false);
 
   useEffect(() => { openCheckout(); }, []); // eslint-disable-line
 
@@ -86,6 +87,7 @@ export default function RazorpayModal({ amount, purpose = "Payment", prefill = {
       ...(server?.orderId    ? { order_id:    server.orderId }    : {}),
       ...(server?.customerId ? { customer_id: server.customerId } : {}),
       handler: async (response) => {
+        resolvedRef.current = true;
         // Verify the signature server-side when we have a real order
         if (server?.orderId && response.razorpay_signature) {
           try {
@@ -102,7 +104,7 @@ export default function RazorpayModal({ amount, purpose = "Payment", prefill = {
         onSuccess(response.razorpay_payment_id);
       },
       modal: {
-        ondismiss: onClose,
+        ondismiss: () => { resolvedRef.current = true; onClose(); },
         escape:    false,
       },
       prefill: {
@@ -115,11 +117,26 @@ export default function RazorpayModal({ amount, purpose = "Payment", prefill = {
     try {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (resp) => {
+        resolvedRef.current = true;
         setError(`Payment failed: ${resp.error.description}`);
         setStatus("error");
       });
       rzp.open();
       setStatus("idle");
+
+      // If Razorpay never actually renders its window (blocked by an ad
+      // blocker / privacy extension, unsupported browser, popup blocked),
+      // surface a helpful error instead of leaving the user on a dead page.
+      setTimeout(() => {
+        if (resolvedRef.current) return;
+        if (document.querySelector(".razorpay-container, .razorpay-checkout-frame")) return;
+        setError(
+          "The payment window didn't open. This is usually an ad blocker or privacy " +
+          "extension (e.g. AdBlock, Brave Shields) or blocked cookies. Disable it for " +
+          "this site, or try a different browser / a normal (non-incognito) window."
+        );
+        setStatus("error");
+      }, 4000);
     } catch (err) {
       setError("Failed to open Razorpay. " + err.message);
       setStatus("error");
