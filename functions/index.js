@@ -141,6 +141,51 @@ exports.deleteRazorpayCard = onCall(
   }
 );
 
+// ── Payment Link fallback (works when checkout.js is blocked by an ad blocker)
+exports.createRazorpayPaymentLink = onCall(
+  { secrets: [RZP_KEY_ID, RZP_KEY_SECRET] },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+    const { amount, purpose, customer } = request.data || {};
+    if (!amount || amount <= 0) throw new HttpsError("invalid-argument", "amount required");
+
+    const rzp = new Razorpay({ key_id: RZP_KEY_ID.value(), key_secret: RZP_KEY_SECRET.value() });
+    const link = await rzp.paymentLink.create({
+      amount:         Math.round(amount * 100),
+      currency:       "INR",
+      accept_partial: false,
+      description:    String(purpose || "Payment").slice(0, 200),
+      customer: {
+        name:    customer?.name  || undefined,
+        email:   customer?.email || undefined,
+        contact: (customer?.contact || "").replace(/[^\d+]/g, "") || undefined,
+      },
+      notify:         { sms: false, email: false },
+      reminder_enable: false,
+      notes:          { uid: request.auth.uid, purpose: String(purpose || "payment") },
+    });
+    return { id: link.id, url: link.short_url };
+  }
+);
+
+exports.fetchRazorpayPaymentLink = onCall(
+  { secrets: [RZP_KEY_ID, RZP_KEY_SECRET] },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+    const { id } = request.data || {};
+    if (!id) throw new HttpsError("invalid-argument", "id required");
+
+    const rzp  = new Razorpay({ key_id: RZP_KEY_ID.value(), key_secret: RZP_KEY_SECRET.value() });
+    const link = await rzp.paymentLink.fetch(id);
+    const paid = link.status === "paid";
+    return {
+      status:    link.status,
+      paid,
+      paymentId: paid ? (link.payments?.[0]?.payment_id || null) : null,
+    };
+  }
+);
+
 // ── Verify payment signature after checkout ─────────────────────────────────
 exports.verifyRazorpayPayment = onCall(
   { secrets: [RZP_KEY_SECRET] },
