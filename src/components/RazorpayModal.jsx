@@ -21,7 +21,7 @@ function loadRazorpayScript() {
   });
 }
 
-export default function RazorpayModal({ amount, purpose = "Payment", onSuccess, onClose }) {
+export default function RazorpayModal({ amount, purpose = "Payment", prefill = {}, onSuccess, onClose }) {
   const [status, setStatus] = useState("loading");
   const [error,  setError]  = useState("");
 
@@ -46,6 +46,9 @@ export default function RazorpayModal({ amount, purpose = "Payment", onSuccess, 
       description: purpose,
       image:       "",
       theme:       { color: "#E8620A" },
+      // Let Razorpay remember this customer's cards/UPI against their contact
+      // number, so on a later payment it can show their saved card itself.
+      remember_customer: true,
       handler: (response) => {
         onSuccess(response.razorpay_payment_id);
       },
@@ -54,9 +57,9 @@ export default function RazorpayModal({ amount, purpose = "Payment", onSuccess, 
         escape:    false,
       },
       prefill: {
-        name:    "",
-        email:   "",
-        contact: "",
+        name:    prefill.name    || "",
+        email:   prefill.email   || "",
+        contact: (prefill.contact || "").replace(/[^\d+]/g, ""),
       },
     };
 

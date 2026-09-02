@@ -368,6 +368,11 @@ function AddressSection({ uid }) {
   );
 }
 
+// Strip anything that looks like a full card / account number down to a
+// masked last-4, so full PANs are never stored.
+const sanitizeCardDisplay = (s) =>
+  (s || "").replace(/\d(?:[\s-]?\d){4,}/g, (m) => "•••• " + m.replace(/\D/g, "").slice(-4));
+
 function PaymentSection({ uid }) {
   const [methods, setMethods]   = useState([]);
   const [loadDone, setLoadDone] = useState(false);
@@ -395,7 +400,8 @@ function PaymentSection({ uid }) {
   const saveMethod = async () => {
     setSaving(true);
     const id = addrUid();
-    let updated = [...methods, { ...form, id }];
+    const clean = { ...form, cardDisplay: sanitizeCardDisplay(form.cardDisplay) };
+    let updated = [...methods, { ...clean, id }];
     if (form.isDefault || methods.length === 0) updated = updated.map(p => ({ ...p, isDefault: p.id === id }));
     updated = ensureDefault(updated);
     await persist(updated);
@@ -429,6 +435,13 @@ function PaymentSection({ uid }) {
         </button>
       </div>
 
+      <div style={{ background:"#F8F4F0", borderRadius:10, padding:"10px 14px", fontSize:".8rem",
+        color:"#6B4C38", lineHeight:1.55, marginBottom:16 }}>
+        These are just a note of how you prefer to pay — nothing is stored securely or charged here.
+        Every payment is confirmed by you in the secure Razorpay window at checkout. Tick
+        “Save card” <em>there</em> and Razorpay will remember it for you next time.
+      </div>
+
       {showForm && (
         <div style={{ background:"#FFF8F3", border:"1.5px solid var(--bd)", borderRadius:12, padding:20, marginBottom:16 }}>
           <div style={{ fontWeight:700, fontSize:".9rem", color:"var(--dk)", marginBottom:14 }}>Add Payment Method</div>
@@ -455,11 +468,17 @@ function PaymentSection({ uid }) {
               ? <div><label style={labelSt}>UPI ID *</label>
                   <input style={inputSt} placeholder="yourname@upi"
                     value={form.upiId} onChange={e => setForm(f => ({...f,upiId:e.target.value}))}/></div>
-              : <div><label style={labelSt}>Card / Bank *</label>
-                  <input style={inputSt} placeholder="HDFC Visa ****4567"
-                    value={form.cardDisplay} onChange={e => setForm(f => ({...f,cardDisplay:e.target.value}))}/></div>
+              : <div><label style={labelSt}>Card nickname / last 4 digits *</label>
+                  <input style={inputSt} placeholder="HDFC Visa 4567" maxLength={40}
+                    value={form.cardDisplay}
+                    onChange={e => setForm(f => ({...f,cardDisplay:sanitizeCardDisplay(e.target.value)}))}/></div>
             }
           </div>
+          {form.type === "card" && (
+            <div style={{ fontSize:".72rem", color:"#6B4C38", marginTop:-4, marginBottom:12 }}>
+              🔒 Never enter your full card number — just a nickname and/or the last 4 digits. This is only a note; the card is never charged automatically.
+            </div>
+          )}
           <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:".85rem", marginBottom:16, cursor:"pointer" }}>
             <input type="checkbox" checked={form.isDefault} onChange={e => setForm(f => ({...f,isDefault:e.target.checked}))}/>
             Set as default payment method
@@ -501,7 +520,7 @@ function PaymentSection({ uid }) {
                 )}
               </div>
               <div style={{ fontSize:".83rem", color:"var(--mt)", fontFamily:"monospace", letterSpacing:".04em" }}>
-                {p.type === "upi" ? p.upiId : p.cardDisplay}
+                {p.type === "upi" ? p.upiId : sanitizeCardDisplay(p.cardDisplay)}
               </div>
               <div style={{ display:"flex", gap:8, marginTop:10 }}>
                 {!p.isDefault && <button style={OB} onClick={() => setDefault(p.id)}>Set Default</button>}
@@ -1964,6 +1983,7 @@ export default function ProfilePage({ user, setUser, setPage, products = [], onO
         <RazorpayModal
           amount={parseFloat(rechargeAmt)}
           purpose="Wallet Recharge"
+          prefill={{ name: user?.name, email: user?.email, contact: user?.phone }}
           onSuccess={async () => {
             setRzpOpen(false);
             await rechargeWallet(user.uid, parseFloat(rechargeAmt));

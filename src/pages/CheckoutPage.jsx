@@ -618,7 +618,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
               {savedPayMethods.length > 0 && (
                 <div style={{marginBottom:16}}>
                   <div style={{fontSize:".75rem",fontWeight:700,textTransform:"uppercase",letterSpacing:".06em",color:"#6B4C38",marginBottom:10}}>
-                    Preferred Method
+                    Preferred Method <span style={{fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional note)</span>
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
                     {savedPayMethods.map(p => {
@@ -638,7 +638,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                           <div style={{flex:1}}>
                             <div style={{fontWeight:700,fontSize:".88rem"}}>{p.label||(p.type==="upi"?"UPI":"Card")}</div>
                             <div style={{fontSize:".8rem",color:"var(--mt)",fontFamily:"monospace"}}>
-                              {p.type==="upi"?p.upiId:p.cardDisplay}
+                              {p.type==="upi"?p.upiId:(p.cardDisplay||"").replace(/\d(?:[\s-]?\d){4,}/g,m=>"•••• "+m.replace(/\D/g,"").slice(-4))}
                             </div>
                           </div>
                           {p.isDefault&&<span style={{fontSize:".7rem",background:"#F0E8DF",color:"var(--sf)",padding:"2px 8px",borderRadius:8,fontWeight:700}}>Default</span>}
@@ -654,7 +654,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
                     )}
                   </div>
                   <div style={{fontSize:".76rem",color:"var(--mt)",marginTop:8}}>
-                    Your preferred method will be shown at payment. Actual payment is processed securely.
+                    This is only a note of your preferred method — it isn't charged. You'll pick and confirm payment securely in the Razorpay window after you tap Pay.
                   </div>
                 </div>
               )}
@@ -856,6 +856,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
       <RazorpayModal
         amount={amountToPay}
         purpose="Order Payment"
+        prefill={{ name: addr.name, email: addr.email || user?.email, contact: addr.phone }}
         onSuccess={handleRzpSuccess}
         onClose={() => setRzpCheckoutOpen(false)}
       />
@@ -865,6 +866,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
       <RazorpayModal
         amount={parseFloat(rzpAmt)}
         purpose="Wallet Top Up"
+        prefill={{ name: addr.name || user?.name, email: addr.email || user?.email, contact: addr.phone }}
         onSuccess={async () => {
           setRzpOpen(false);
           setTopUpOpen(false);
