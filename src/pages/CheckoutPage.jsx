@@ -5,7 +5,7 @@ import { fmt, NoImageIcon } from "../utils/helpers";
 import { createOrder } from "../firebase/orderService";
 import { collectDeviceFingerprint } from "../utils/deviceFingerprint";
 import { notifyOrderPlaced } from "../firebase/notificationService";
-import { validateCoupon, calcStackedDiscounts, applyCouponUsage, getPublicCoupons } from "../firebase/couponService";
+import { validateCoupon, calcStackedDiscounts, applyCouponUsage, recordCouponRedemption, getPublicCoupons } from "../firebase/couponService";
 import { debitWallet, subscribeWalletBalance, rechargeWallet } from "../firebase/walletService";
 import RazorpayModal from "../components/RazorpayModal";
 
@@ -273,11 +273,13 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
     setCouponError("");
   };
 
+  const couponCustomer = () => ({ email: addr.email, phone: addr.phone });
+
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
     setCouponLoading(true);
     setCouponError("");
-    const result = await validateCoupon(couponInput, subtotal);
+    const result = await validateCoupon(couponInput, subtotal, couponCustomer());
     if (result.valid) { addCoupon(result.coupon); setCouponInput(""); }
     else setCouponError(result.error);
     setCouponLoading(false);
@@ -290,17 +292,16 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
 
   const toggleAvailable = async () => {
     if (showAvailable) { setShowAvailable(false); return; }
-    if (!availableCoupons) {
-      const list = await getPublicCoupons(subtotal);
-      setAvailableCoupons(list);
-    }
+    setAvailableCoupons(null);
     setShowAvailable(true);
+    const list = await getPublicCoupons(subtotal, couponCustomer());
+    setAvailableCoupons(list);
   };
 
   const quickApply = async (code) => {
     setCouponLoading(true);
     setCouponError("");
-    const result = await validateCoupon(code, subtotal);
+    const result = await validateCoupon(code, subtotal, couponCustomer());
     if (result.valid) addCoupon(result.coupon);
     else setCouponError(result.error);
     setCouponLoading(false);
@@ -400,6 +401,9 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
     };
     await createOrder(orderData);
     await Promise.all(appliedCoupons.map(c => applyCouponUsage(c.docId)));
+    await Promise.all(appliedCoupons.map(c => recordCouponRedemption(c, {
+      email: addr.email, phone: addr.phone, userId: user?.uid || null, orderId,
+    })));
     notifyOrderPlaced(orderData);
     setLastOrder({ ...orderData, docId: orderId });
     setCart([]);
@@ -489,33 +493,42 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
             ) : availableCoupons.map(c => {
               const eligible=!c.minOrder||subtotal>=c.minOrder;
               const isOn = appliedCoupons.some(a => a.code === c.code);
-              const blocked = hasPrivateCoupon && !isOn;
+              const used = !!c._alreadyUsed && !isOn;
+              const blocked = (hasPrivateCoupon && !isOn) || used;
               const discountText=c.type==="percent"?`${c.value}% off${c.maxDiscount?` (max ₹${c.maxDiscount})`:""}`:`₹${c.value} off`;
               return (
                 <div key={c.docId}
-                  style={{border:`1.5px ${isOn?"solid":"dashed"} ${isOn?"#2D7D46":eligible?"#E8620A":"#D1C5BB"}`,borderRadius:10,padding:"10px 14px",
-                    background:isOn?"#EEF7F0":eligible?"#FFFAF6":"#F8F4F0",
-                    display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,opacity:eligible?1:0.65}}>
+                  style={{border:`1.5px ${isOn?"solid":"dashed"} ${isOn?"#2D7D46":used?"#D1C5BB":eligible?"#E8620A":"#D1C5BB"}`,borderRadius:10,padding:"10px 14px",
+                    background:isOn?"#EEF7F0":(eligible && !used)?"#FFFAF6":"#F8F4F0",
+                    display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,opacity:(eligible && !used)?1:0.6}}>
                   <div>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3,flexWrap:"wrap"}}>
                       <span style={{fontFamily:"monospace",fontWeight:800,fontSize:".92rem",letterSpacing:".06em",color:"#18100A"}}>{c.code}</span>
                       <span style={{fontSize:".73rem",fontWeight:700,color:"#E8620A"}}>{discountText}</span>
+                      {c.oncePerCustomer && (
+                        <span style={{fontSize:".66rem",fontWeight:700,padding:"1px 6px",borderRadius:6,
+                          background:used?"#FDECEA":"#EAF2FF",color:used?"#C0392B":"#1A5276"}}>
+                          {used ? "Already used" : "One per customer"}
+                        </span>
+                      )}
                     </div>
                     {c.description && <div style={{fontSize:".76rem",color:"#2D1E12",marginBottom:2}}>{c.description}</div>}
                     <div style={{fontSize:".75rem",color:"#6B4C38"}}>
-                      {c.minOrder>0?eligible?`Min order ₹${c.minOrder} ✓`:`Min order ₹${c.minOrder} — add ₹${c.minOrder-subtotal} more`:"No minimum order"}
+                      {used
+                        ? "You've already redeemed this offer."
+                        : c.minOrder>0?eligible?`Min order ₹${c.minOrder} ✓`:`Min order ₹${c.minOrder} — add ₹${c.minOrder-subtotal} more`:"No minimum order"}
                     </div>
                   </div>
                   <button type="button"
                     onClick={()=> isOn ? removeCoupon(c.code) : quickApply(c.code)}
                     disabled={(!eligible && !isOn) || blocked}
-                    title={blocked ? "Remove the current coupon to combine offers" : undefined}
+                    title={used ? "Already used on this email/phone" : blocked ? "Remove the current coupon to combine offers" : undefined}
                     style={{padding:"6px 16px",border:"none",borderRadius:8,
                       background:isOn?"#2D7D46":(eligible && !blocked)?"#E8620A":"#D1C5BB",
                       color:"#fff",fontWeight:700,fontSize:".8rem",
                       cursor:((eligible||isOn) && !blocked)?"pointer":"not-allowed",
                       fontFamily:"DM Sans,sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
-                    {isOn ? "✓ Added" : "Apply"}
+                    {isOn ? "✓ Added" : used ? "Used" : "Apply"}
                   </button>
                 </div>
               );

@@ -4,7 +4,44 @@ import {
   doc, query, where, serverTimestamp, increment,
 } from "firebase/firestore";
 
-const col = () => collection(db, "coupons");
+const col    = () => collection(db, "coupons");
+const redCol = () => collection(db, "couponRedemptions");
+
+const normEmail = (e) => (e || "").trim().toLowerCase();
+const normPhone = (p) => (p || "").replace(/\D/g, "").slice(-10);
+
+// Has this customer (by email OR phone) already redeemed this code?
+// Fails open (returns false) if the lookup itself errors — never block a sale.
+export const hasCustomerUsedCoupon = async (code, email, phone) => {
+  const c = (code || "").trim().toUpperCase();
+  const e = normEmail(email), p = normPhone(phone);
+  if (!c || (!e && !p)) return false;
+  try {
+    const snap = await getDocs(query(redCol(), where("code", "==", c)));
+    return snap.docs.some(d => {
+      const r = d.data();
+      return (e && r.email === e) || (p && r.phone === p);
+    });
+  } catch {
+    return false;
+  }
+};
+
+// Record a redemption once the order is placed (only for one-per-customer coupons)
+export const recordCouponRedemption = async (coupon, { email, phone, userId, orderId } = {}) => {
+  if (!coupon?.oncePerCustomer) return;
+  try {
+    await addDoc(redCol(), {
+      code:     (coupon.code || "").trim().toUpperCase(),
+      couponId: coupon.docId || null,
+      email:    normEmail(email),
+      phone:    normPhone(phone),
+      userId:   userId || null,
+      orderId:  orderId || null,
+      at:       serverTimestamp(),
+    });
+  } catch { /* non-fatal */ }
+};
 
 export const getCoupons = async () => {
   const snap = await getDocs(col());
@@ -31,7 +68,7 @@ export const applyCouponUsage = async (docId) => {
   await updateDoc(doc(db, "coupons", docId), { usedCount: increment(1) });
 };
 
-export const validateCoupon = async (code, orderTotal) => {
+export const validateCoupon = async (code, orderTotal, customer = {}) => {
   if (!code?.trim()) return { valid: false, error: "Enter a coupon code." };
 
   const snap = await getDocs(query(col(), where("code", "==", code.trim().toUpperCase())));
@@ -52,13 +89,17 @@ export const validateCoupon = async (code, orderTotal) => {
   if (coupon.maxUses && coupon.usedCount >= coupon.maxUses)
     return { valid: false, error: "This coupon has reached its usage limit." };
 
+  if (coupon.oncePerCustomer &&
+      await hasCustomerUsedCoupon(coupon.code, customer.email, customer.phone))
+    return { valid: false, error: "You've already used this coupon." };
+
   return { valid: true, coupon };
 };
 
-export const getPublicCoupons = async (orderTotal) => {
+export const getPublicCoupons = async (orderTotal, customer = {}) => {
   const snap = await getDocs(query(col(), where("showToCustomers", "==", true), where("isActive", "==", true)));
   const now = new Date();
-  return snap.docs
+  const list = snap.docs
     .map(d => ({ ...d.data(), docId: d.id }))
     .filter(c => {
       if (c.expiresAt) {
@@ -68,6 +109,15 @@ export const getPublicCoupons = async (orderTotal) => {
       if (c.maxUses && c.usedCount >= c.maxUses) return false;
       return true;
     });
+
+  // Flag one-per-customer coupons this customer has already redeemed
+  const oncePer = list.filter(c => c.oncePerCustomer);
+  if (oncePer.length && (customer.email || customer.phone)) {
+    await Promise.all(oncePer.map(async c => {
+      c._alreadyUsed = await hasCustomerUsedCoupon(c.code, customer.email, customer.phone);
+    }));
+  }
+  return list;
 };
 
 export const calcDiscount = (coupon, subtotal) => {

@@ -5,7 +5,7 @@ import { fmt } from "../../utils/helpers";
 const EMPTY = {
   code: "", type: "percent", value: "", minOrder: "",
   maxUses: "", maxDiscount: "", expiresAt: "", isActive: true,
-  description: "", showToCustomers: false,
+  description: "", showToCustomers: false, oncePerCustomer: false,
 };
 
 function CouponModal({ coupon, onSave, onClose }) {
@@ -31,6 +31,7 @@ function CouponModal({ coupon, onSave, onClose }) {
       isActive:    form.isActive,
       description:      form.description || "",
       showToCustomers:  !!form.showToCustomers,
+      oncePerCustomer:  !!form.oncePerCustomer,
     };
     await onSave(data);
     setSaving(false);
@@ -104,6 +105,16 @@ function CouponModal({ coupon, onSave, onClose }) {
             <label htmlFor="showToCustomers" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>
               Show to customers at checkout
               <span style={{marginLeft:6,fontSize:".76rem",color:"#6B4C38",fontWeight:400}}>(listed under "View available coupons")</span>
+            </label>
+          </div>
+          <div className="admin-inp-grp" style={{display:"flex",alignItems:"center",gap:10,margin:0}}>
+            <input type="checkbox" id="oncePerCustomer" checked={!!form.oncePerCustomer} onChange={e => set("oncePerCustomer", e.target.checked)}
+              style={{width:16,height:16,flexShrink:0,accentColor:"#E8620A"}}/>
+            <label htmlFor="oncePerCustomer" style={{textTransform:"none",letterSpacing:0,margin:0,fontSize:".88rem"}}>
+              One use per customer
+              <span style={{marginLeft:6,fontSize:".76rem",color:"#6B4C38",fontWeight:400}}>
+                (matched by email &amp; phone — customer sees “Already used”)
+              </span>
             </label>
           </div>
         </div>
@@ -203,6 +214,9 @@ export default function AdminCoupons() {
                         <span style={{fontFamily:"monospace",fontWeight:800,fontSize:".95rem",letterSpacing:".06em",color:"#18100A"}}>{c.code}</span>
                         {c.showToCustomers && (
                           <span title="Shown to customers at checkout" style={{fontSize:".68rem",fontWeight:700,padding:"2px 7px",borderRadius:8,background:"#EAF2FF",color:"#1A5276"}}>👁 Public</span>
+                        )}
+                        {c.oncePerCustomer && (
+                          <span title="One redemption per customer (email/phone)" style={{fontSize:".68rem",fontWeight:700,padding:"2px 7px",borderRadius:8,background:"#F0E8DF",color:"#6B4C38"}}>1×/customer</span>
                         )}
                       </div>
                       {c.description && <div style={{fontSize:".75rem",color:"#6B4C38",marginTop:2}}>{c.description}</div>}
