@@ -78,3 +78,21 @@ export const calcDiscount = (coupon, subtotal) => {
   if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
   return Math.min(discount, subtotal);
 };
+
+// Stack several coupons: each computed on the original subtotal, then the
+// combined total is capped at the subtotal (scaled down proportionally so the
+// per-coupon breakdown still adds up).
+export const calcStackedDiscounts = (coupons, subtotal) => {
+  const breakdown = (coupons || []).map(c => ({
+    code:   c.code,
+    docId:  c.docId,
+    amount: calcDiscount(c, subtotal),
+  }));
+  let total = breakdown.reduce((s, d) => s + d.amount, 0);
+  if (total > subtotal && total > 0) {
+    const scale = subtotal / total;
+    breakdown.forEach(d => { d.amount = Math.round(d.amount * scale); });
+    total = breakdown.reduce((s, d) => s + d.amount, 0);
+  }
+  return { total: Math.min(total, subtotal), breakdown };
+};

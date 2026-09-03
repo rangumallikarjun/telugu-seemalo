@@ -94,7 +94,10 @@ export default function InvoiceModal({ order, onClose }) {
   if (!order) return null;
 
   const subtotal     = order.items?.reduce((s, i) => s + i.price * i.qty, 0) || 0;
-  const discount     = order.coupon?.discount || 0;
+  const couponRows   = order.coupons?.length
+    ? order.coupons
+    : (order.coupon ? [{ code: order.coupon.code, discount: order.coupon.discount }] : []);
+  const discount     = couponRows.reduce((s, c) => s + (c.discount || 0), 0);
   const taxableAmt    = subtotal - discount;
   const exclusiveTax = order.tax && !order.tax.inclusive ? (order.tax.amount || 0) : 0;
   const inclusiveTax = order.tax &&  order.tax.inclusive  ? (order.tax.amount || 0) : 0;
@@ -233,9 +236,9 @@ export default function InvoiceModal({ order, onClose }) {
             <div className="inv-summary">
               <div className="inv-totals">
                 <div className="row"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
-                {discount > 0 && (
-                  <div className="row neg"><span>Coupon ({order.coupon.code})</span><span>− {fmt(discount)}</span></div>
-                )}
+                {couponRows.filter(c => (c.discount || 0) > 0).map(c => (
+                  <div key={c.code} className="row neg"><span>Coupon ({c.code})</span><span>− {fmt(c.discount)}</span></div>
+                ))}
                 {exclusiveTax > 0 && (
                   <div className="row tax"><span>{order.tax.label} ({order.tax.rate}%)</span><span>+ {fmt(exclusiveTax)}</span></div>
                 )}

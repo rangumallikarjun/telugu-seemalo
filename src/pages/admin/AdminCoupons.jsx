@@ -84,9 +84,12 @@ function CouponModal({ coupon, onSave, onClose }) {
         </div>
 
         <div className="admin-inp-grp">
-          <label>Description (internal note)</label>
+          <label>Description</label>
           <input value={form.description} onChange={e => set("description", e.target.value)}
-            placeholder="e.g. New customer welcome discount"/>
+            placeholder="e.g. Welcome offer — 10% off your first order"/>
+          <div style={{fontSize:".74rem",color:"#6B4C38",marginTop:4}}>
+            Shown to customers under “View available coupons” when this coupon is public.
+          </div>
         </div>
 
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:6}}>

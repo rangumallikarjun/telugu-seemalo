@@ -5,7 +5,7 @@ import { fmt, NoImageIcon } from "../utils/helpers";
 import { createOrder } from "../firebase/orderService";
 import { collectDeviceFingerprint } from "../utils/deviceFingerprint";
 import { notifyOrderPlaced } from "../firebase/notificationService";
-import { validateCoupon, calcDiscount, applyCouponUsage, getPublicCoupons } from "../firebase/couponService";
+import { validateCoupon, calcStackedDiscounts, applyCouponUsage, getPublicCoupons } from "../firebase/couponService";
 import { debitWallet, subscribeWalletBalance, rechargeWallet } from "../firebase/walletService";
 import RazorpayModal from "../components/RazorpayModal";
 
@@ -150,7 +150,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
   const [cfg, setCfg]             = useState(SHIPPING_DEFAULTS);
   const [taxCfg, setTaxCfg]       = useState(TAX_DEFAULTS);
   const [couponInput, setCouponInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [appliedCoupons, setAppliedCoupons] = useState([]);
   const [couponError, setCouponError]     = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [showAvailable, setShowAvailable] = useState(false);
@@ -242,7 +242,8 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
   const subtotal    = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const isFree      = cfg.enableFreeShipping && subtotal >= cfg.freeAbove;
   const shippingFee = ship === "express" ? cfg.expressFee : (isFree ? 0 : cfg.standardFee);
-  const discount    = calcDiscount(appliedCoupon, subtotal);
+  const { total: discount, breakdown: couponBreakdown } = calcStackedDiscounts(appliedCoupons, subtotal);
+  const hasPrivateCoupon = appliedCoupons.some(c => !c.showToCustomers);
   const taxableAmt  = subtotal - discount;
   const taxAmount   = taxCfg.enabled && !taxCfg.inclusive
     ? Math.round(taxableAmt * taxCfg.rate / 100)
@@ -254,21 +255,38 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
   const walletApplied = useWallet ? Math.min(walletBalance, total) : 0;
   const amountToPay   = total - walletApplied;
 
+  // Add a validated coupon to the stack.
+  //  · Public (admin-listed) coupons stack freely with other public coupons.
+  //  · A private (typed-only) coupon can't be combined — it replaces the stack,
+  //    and while it's applied no other coupon can be added.
+  const addCoupon = (coupon) => {
+    if (appliedCoupons.some(c => c.code === coupon.code)) { setCouponError(""); return; }
+    if (!coupon.showToCustomers) {                       // private → stands alone
+      setAppliedCoupons([coupon]); setCouponError("");
+      return;
+    }
+    if (appliedCoupons.some(c => !c.showToCustomers)) {  // a private coupon is already applied
+      setCouponError("Remove the current coupon to combine other offers.");
+      return;
+    }
+    setAppliedCoupons(prev => prev.some(c => c.code === coupon.code) ? prev : [...prev, coupon]);
+    setCouponError("");
+  };
+
   const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
     setCouponLoading(true);
     setCouponError("");
-    setAppliedCoupon(null);
     const result = await validateCoupon(couponInput, subtotal);
-    if (result.valid) {
-      setAppliedCoupon(result.coupon);
-      setCouponError("");
-    } else {
-      setCouponError(result.error);
-    }
+    if (result.valid) { addCoupon(result.coupon); setCouponInput(""); }
+    else setCouponError(result.error);
     setCouponLoading(false);
   };
 
-  const removeCoupon = () => { setAppliedCoupon(null); setCouponInput(""); setCouponError(""); };
+  const removeCoupon = (code) => {
+    setAppliedCoupons(prev => prev.filter(c => c.code !== code));
+    setCouponError("");
+  };
 
   const toggleAvailable = async () => {
     if (showAvailable) { setShowAvailable(false); return; }
@@ -280,13 +298,10 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
   };
 
   const quickApply = async (code) => {
-    setShowAvailable(false);
-    setCouponInput(code);
     setCouponLoading(true);
     setCouponError("");
-    setAppliedCoupon(null);
     const result = await validateCoupon(code, subtotal);
-    if (result.valid) setAppliedCoupon(result.coupon);
+    if (result.valid) addCoupon(result.coupon);
     else setCouponError(result.error);
     setCouponLoading(false);
   };
@@ -369,7 +384,12 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
       total, addr, ship,
       userId: user?.uid || null,
       userEmail: addr.email || user?.email || null,
-      coupon: appliedCoupon ? { code: appliedCoupon.code, discount } : null,
+      coupon: appliedCoupons.length
+        ? { code: appliedCoupons.map(c => c.code).join(" + "), discount }
+        : null,
+      coupons: appliedCoupons.length
+        ? couponBreakdown.map(b => ({ code: b.code, discount: b.amount }))
+        : null,
       tax: taxCfg.enabled ? { label: taxCfg.label, rate: taxCfg.rate, inclusive: taxCfg.inclusive, amount: taxCfg.inclusive ? inclusiveTax : taxAmount } : null,
       preferredPayment: selPay ? { type: selPay.type, label: selPay.label, upiId: selPay.upiId || "" } : null,
       walletApplied:      walletApplied || null,
@@ -379,7 +399,7 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
       _device: deviceInfo,   // stored for admin security / fraud review only
     };
     await createOrder(orderData);
-    if (appliedCoupon) await applyCouponUsage(appliedCoupon.docId);
+    await Promise.all(appliedCoupons.map(c => applyCouponUsage(c.docId)));
     notifyOrderPlaced(orderData);
     setLastOrder({ ...orderData, docId: orderId });
     setCart([]);
@@ -409,22 +429,38 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
   };
 
   // ── Coupon UI (rendered inside the Order Summary card) ──
+  const couponAmount = (code) => couponBreakdown.find(b => b.code === code)?.amount || 0;
+
   const couponBox = (
     <div className="ck-coupon-box">
-      {appliedCoupon ? (
-        <div className="coupon-applied">
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:"1.1rem"}}>🎟️</span>
-            <div>
-              <div style={{fontWeight:700,fontSize:".92rem",color:"#2D7D46"}}>{appliedCoupon.code}</div>
-              <div style={{fontSize:".78rem",color:"#2D7D46",marginTop:2}}>
-                You save {fmt(discount)}{appliedCoupon.type==="percent"?` (${appliedCoupon.value}% off)`:""}
+      {/* Applied coupons */}
+      {appliedCoupons.length > 0 && (
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
+          {appliedCoupons.map(c => (
+            <div key={c.code} className="coupon-applied">
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:"1.05rem"}}>🎟️</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:".9rem",color:"#2D7D46"}}>{c.code}</div>
+                  <div style={{fontSize:".76rem",color:"#2D7D46",marginTop:1}}>
+                    − {fmt(couponAmount(c.code))}{c.type==="percent"?` (${c.value}% off)`:""}
+                    {!c.showToCustomers && " · can't be combined"}
+                  </div>
+                </div>
               </div>
+              <button type="button" onClick={()=>removeCoupon(c.code)} className="coupon-remove">✕ Remove</button>
             </div>
-          </div>
-          <button type="button" onClick={removeCoupon} className="coupon-remove">✕ Remove</button>
+          ))}
+          {appliedCoupons.length > 1 && (
+            <div style={{fontSize:".78rem",fontWeight:700,color:"#2D7D46",textAlign:"right"}}>
+              Total coupon savings: {fmt(discount)}
+            </div>
+          )}
         </div>
-      ) : (
+      )}
+
+      {/* Manual code entry — one at a time */}
+      {!hasPrivateCoupon && (
         <div className="coupon-row">
           <input className="coupon-input" placeholder="Enter coupon code" value={couponInput}
             onChange={e=>{setCouponInput(e.target.value.toUpperCase());setCouponError("");}}
@@ -436,49 +472,57 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
         </div>
       )}
       {couponError&&<div className="coupon-error">{couponError}</div>}
-      {!appliedCoupon && (
-        <div style={{marginTop:10}}>
-          <button type="button" onClick={toggleAvailable}
-            style={{background:"none",border:"none",cursor:"pointer",color:"#E8620A",fontSize:".83rem",fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:5,fontFamily:"DM Sans,sans-serif"}}>
-            🎟️ View available coupons
-            <span style={{fontSize:".7rem",transition:"transform .2s",display:"inline-block",transform:showAvailable?"rotate(180deg)":"none"}}>▾</span>
-          </button>
-          {showAvailable && (
-            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
-              {availableCoupons===null ? (
-                <div style={{fontSize:".82rem",color:"var(--mt)"}}>Loading…</div>
-              ) : availableCoupons.length===0 ? (
-                <div style={{fontSize:".82rem",color:"var(--mt)"}}>No coupons available right now.</div>
-              ) : availableCoupons.map(c => {
-                const eligible=!c.minOrder||subtotal>=c.minOrder;
-                const discountText=c.type==="percent"?`${c.value}% off${c.maxDiscount?` (max ₹${c.maxDiscount})`:""}`:`₹${c.value} off`;
-                return (
-                  <div key={c.docId}
-                    style={{border:`1.5px dashed ${eligible?"#E8620A":"#D1C5BB"}`,borderRadius:10,padding:"10px 14px",
-                      background:eligible?"#FFFAF6":"#F8F4F0",
-                      display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,opacity:eligible?1:0.65}}>
-                    <div>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-                        <span style={{fontFamily:"monospace",fontWeight:800,fontSize:".92rem",letterSpacing:".06em",color:"#18100A"}}>{c.code}</span>
-                        <span style={{fontSize:".73rem",fontWeight:700,color:"#E8620A"}}>{discountText}</span>
-                      </div>
-                      <div style={{fontSize:".75rem",color:"#6B4C38"}}>
-                        {c.minOrder>0?eligible?`Min order ₹${c.minOrder} ✓`:`Min order ₹${c.minOrder} — add ₹${c.minOrder-subtotal} more`:"No minimum order"}
-                      </div>
+
+      <div style={{marginTop:10}}>
+        <button type="button" onClick={toggleAvailable}
+          style={{background:"none",border:"none",cursor:"pointer",color:"#E8620A",fontSize:".83rem",fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:5,fontFamily:"DM Sans,sans-serif"}}>
+          🎟️ {showAvailable ? "Hide" : "View"} available coupons
+          <span style={{fontSize:".7rem",transition:"transform .2s",display:"inline-block",transform:showAvailable?"rotate(180deg)":"none"}}>▾</span>
+        </button>
+        {showAvailable && (
+          <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{fontSize:".74rem",color:"#6B4C38"}}>Combine as many of these as you like.</div>
+            {availableCoupons===null ? (
+              <div style={{fontSize:".82rem",color:"var(--mt)"}}>Loading…</div>
+            ) : availableCoupons.length===0 ? (
+              <div style={{fontSize:".82rem",color:"var(--mt)"}}>No coupons available right now.</div>
+            ) : availableCoupons.map(c => {
+              const eligible=!c.minOrder||subtotal>=c.minOrder;
+              const isOn = appliedCoupons.some(a => a.code === c.code);
+              const blocked = hasPrivateCoupon && !isOn;
+              const discountText=c.type==="percent"?`${c.value}% off${c.maxDiscount?` (max ₹${c.maxDiscount})`:""}`:`₹${c.value} off`;
+              return (
+                <div key={c.docId}
+                  style={{border:`1.5px ${isOn?"solid":"dashed"} ${isOn?"#2D7D46":eligible?"#E8620A":"#D1C5BB"}`,borderRadius:10,padding:"10px 14px",
+                    background:isOn?"#EEF7F0":eligible?"#FFFAF6":"#F8F4F0",
+                    display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,opacity:eligible?1:0.65}}>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                      <span style={{fontFamily:"monospace",fontWeight:800,fontSize:".92rem",letterSpacing:".06em",color:"#18100A"}}>{c.code}</span>
+                      <span style={{fontSize:".73rem",fontWeight:700,color:"#E8620A"}}>{discountText}</span>
                     </div>
-                    <button type="button" onClick={()=>quickApply(c.code)} disabled={!eligible}
-                      style={{padding:"6px 16px",border:"none",borderRadius:8,background:eligible?"#E8620A":"#D1C5BB",
-                        color:"#fff",fontWeight:700,fontSize:".8rem",cursor:eligible?"pointer":"not-allowed",
-                        fontFamily:"DM Sans,sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
-                      Apply
-                    </button>
+                    {c.description && <div style={{fontSize:".76rem",color:"#2D1E12",marginBottom:2}}>{c.description}</div>}
+                    <div style={{fontSize:".75rem",color:"#6B4C38"}}>
+                      {c.minOrder>0?eligible?`Min order ₹${c.minOrder} ✓`:`Min order ₹${c.minOrder} — add ₹${c.minOrder-subtotal} more`:"No minimum order"}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                  <button type="button"
+                    onClick={()=> isOn ? removeCoupon(c.code) : quickApply(c.code)}
+                    disabled={(!eligible && !isOn) || blocked}
+                    title={blocked ? "Remove the current coupon to combine offers" : undefined}
+                    style={{padding:"6px 16px",border:"none",borderRadius:8,
+                      background:isOn?"#2D7D46":(eligible && !blocked)?"#E8620A":"#D1C5BB",
+                      color:"#fff",fontWeight:700,fontSize:".8rem",
+                      cursor:((eligible||isOn) && !blocked)?"pointer":"not-allowed",
+                      fontFamily:"DM Sans,sans-serif",whiteSpace:"nowrap",flexShrink:0}}>
+                    {isOn ? "✓ Added" : "Apply"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -802,12 +846,12 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
               {couponBox}
               <hr className="ck-divider"/>
               <div className="ck-row"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
-              {discount > 0 && (
-                <div className="ck-row" style={{color:"#2D7D46",fontWeight:600}}>
-                  <span>🎟️ Coupon ({appliedCoupon.code})</span>
-                  <span>− {fmt(discount)}</span>
+              {couponBreakdown.filter(b => b.amount > 0).map(b => (
+                <div key={b.code} className="ck-row" style={{color:"#2D7D46",fontWeight:600}}>
+                  <span>🎟️ {b.code}</span>
+                  <span>− {fmt(b.amount)}</span>
                 </div>
-              )}
+              ))}
               {taxAmount > 0 && (
                 <div className="ck-row" style={{color:"#B7770D"}}>
                   <span>{taxCfg.label} ({taxCfg.rate}%)</span>

@@ -19,7 +19,10 @@ const pushNotif = (userId, type, title, message, link = null, extra = {}) => {
 // ── Order placed ──────────────────────────────────────────────────────────────
 const buildInvoiceText = (order) => {
   const subtotal   = (order.items || []).reduce((s, i) => s + i.price * i.qty, 0);
-  const discount   = order.coupon?.discount || 0;
+  const couponRows = order.coupons?.length
+    ? order.coupons
+    : (order.coupon ? [{ code: order.coupon.code, discount: order.coupon.discount }] : []);
+  const discount   = couponRows.reduce((s, c) => s + (c.discount || 0), 0);
   const taxable    = subtotal - discount;
   const exclTax    = order.tax && !order.tax.inclusive ? (order.tax.amount || 0) : 0;
   const inclTax    = order.tax &&  order.tax.inclusive ? (order.tax.amount || 0) : 0;
@@ -34,7 +37,7 @@ const buildInvoiceText = (order) => {
 
   const totals = [
     `  Subtotal: ${fmt(subtotal)}`,
-    discount > 0 ? `  Coupon (${order.coupon.code}): − ${fmt(discount)}` : null,
+    ...couponRows.filter(c => (c.discount || 0) > 0).map(c => `  Coupon (${c.code}): − ${fmt(c.discount)}`),
     exclTax > 0 ? `  ${order.tax.label} (${order.tax.rate}%): + ${fmt(exclTax)}` : null,
     `  Shipping (${order.ship === "express" ? "Express" : "Standard"}): ${shippingFee <= 0 ? "Free" : fmt(shippingFee)}`,
     `  ─────────────────────────`,
