@@ -6,7 +6,7 @@ import { DEFAULT_CATEGORY_ITEMS, DEFAULT_SOCIAL_LINKS } from "../HomePage";
 const STORE_DEFAULTS = {
   storeName: "Telugu Seemalo",
   tagline: "Authentic Cheriyal Craft",
-  email: "hello@teluguseeamalo.in",
+  email: "hello@teluguseemalo.in",
   phone: "+91 9876 543 210",
   address: "Karimnagar, Telangana, India",
   contactEmailNote: "We reply within 24–48 hours on weekdays",
@@ -225,7 +225,7 @@ export default function AdminSettings() {
               Google Search Preview
             </div>
             <div style={{background:"#F4EDE5",borderRadius:10,padding:"14px 18px",fontFamily:"arial,sans-serif"}}>
-              <div style={{fontSize:".8rem",color:"#2D1E12"}}>teluguseeamalo.in</div>
+              <div style={{fontSize:".8rem",color:"#2D1E12"}}>teluguseemalo.in</div>
               <div style={{fontSize:"1.15rem",color:"#1A0DAB",margin:"2px 0",lineHeight:1.3,
                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                 {seo.siteTitle || "Site title goes here"}

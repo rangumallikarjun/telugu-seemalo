@@ -1,5 +1,17 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "../firebase/config";
 import { fmt } from "../utils/helpers";
+
+const STORE_FALLBACK = {
+  storeName: "Telugu Seemalo",
+  tagline:   "Authentic Cheriyal Craft",
+  email:     "hello@teluguseemalo.in",
+  phone:     "+91 9876 543 210",
+  address:   "Karimnagar, Telangana, India",
+  gstNumber: "",
+  returnDays: 7,
+};
 
 // ── Shared invoice stylesheet (used by both the on-screen preview and print) ──
 const INVOICE_CSS = `
@@ -79,6 +91,13 @@ const INVOICE_CSS = `
 
 export default function InvoiceModal({ order, onClose }) {
   const ref = useRef();
+  const [store, setStore] = useState(STORE_FALLBACK);
+
+  useEffect(() => {
+    getDoc(doc(db, "settings", "store"))
+      .then(s => { if (s.exists()) setStore(v => ({ ...v, ...s.data() })); })
+      .catch(() => {});
+  }, []);
 
   const handlePrint = () => {
     const win = window.open("", "_blank");
@@ -155,11 +174,12 @@ export default function InvoiceModal({ order, onClose }) {
             {/* Header */}
             <div className="inv-top">
               <div>
-                <div className="inv-brand-name">Telugu Seemalo</div>
-                <div className="inv-brand-tag">Authentic Cheriyal Craft</div>
+                <div className="inv-brand-name">{store.storeName}</div>
+                <div className="inv-brand-tag">{store.tagline}</div>
                 <div className="inv-brand-meta">
-                  Karimnagar, Telangana, India<br/>
-                  hello@teluguseeamalo.in&nbsp;&nbsp;·&nbsp;&nbsp;+91 9876 543 210
+                  {store.address}<br/>
+                  {store.email}&nbsp;&nbsp;·&nbsp;&nbsp;{store.phone}
+                  {store.gstNumber && <><br/>GSTIN: {store.gstNumber}</>}
                 </div>
               </div>
               <div className="inv-title">
@@ -263,12 +283,12 @@ export default function InvoiceModal({ order, onClose }) {
             <div className="inv-foot">
               <div className="thanks">
                 <strong>Thank you for supporting Cheriyal artisans.</strong>
-                Queries: hello@teluguseeamalo.in · +91 9876 543 210<br/>
-                Returns accepted within 7 days of delivery. This is a computer-generated invoice.
+                Queries: {store.email} · {store.phone}<br/>
+                Returns accepted within {store.returnDays || 7} days of delivery. This is a computer-generated invoice.
               </div>
               <div className="seal">
-                <div className="k">Telugu Seemalo</div>
-                Handcrafted in Karimnagar,<br/>Telangana, India
+                <div className="k">{store.storeName}</div>
+                {store.address}
               </div>
             </div>
 

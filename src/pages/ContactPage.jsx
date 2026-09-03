@@ -15,7 +15,7 @@ const CATEGORIES = [
 ];
 
 const STORE_DEFAULTS = {
-  email: "hello@teluguseeamalo.in",
+  email: "hello@teluguseemalo.in",
   phone: "+91 9876 543 210",
   address: "Karimnagar, Telangana, India",
   contactEmailNote: "We reply within 24–48 hours on weekdays",

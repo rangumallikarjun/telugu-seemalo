@@ -5,7 +5,7 @@ import { DEFAULT_CATEGORY_ITEMS, DEFAULT_SOCIAL_LINKS } from "../pages/HomePage"
 
 const STORE_DEFAULTS = {
   storeName: "Telugu Seemalo",
-  email: "hello@teluguseeamalo.in",
+  email: "hello@teluguseemalo.in",
   phone: "+91 9876 543 210",
   address: "Karimnagar, Telangana",
   footerDescription: "Authentic Cheriyal lacquer art from Karimnagar, Telangana. Supporting artisan families since 2020.",
