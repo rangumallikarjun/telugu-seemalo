@@ -1,14 +1,18 @@
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { app } from "../firebase/config";
+import { callFn } from "./netlifyFn";
 
-const fns = getFunctions(app);
+// ShipRocket runs through Netlify serverless functions (Firebase Cloud
+// Functions needed the paid Blaze plan).
+export const pushOrderToShiprocket = (orderId, razorpayPaymentId) =>
+  callFn("shiprocket-push", { orderId, razorpayPaymentId });
 
-const _pushOrder  = httpsCallable(fns, "shiprocketPushOrder");
-const _assignAWB  = httpsCallable(fns, "shiprocketAssignAWB");
-const _track      = httpsCallable(fns, "shiprocketTrack");
-const _syncNow    = httpsCallable(fns, "syncShiprocketNow");
+export const assignShiprocketAWB = (shipmentId, orderId) =>
+  callFn("shiprocket-awb", { shipmentId, orderId }, { requireAuth: true });
 
-export const pushOrderToShiprocket  = (orderId)             => _pushOrder({ orderId }).then(r => r.data);
-export const assignShiprocketAWB    = (shipmentId, orderId) => _assignAWB({ shipmentId, orderId }).then(r => r.data);
-export const trackShiprocketOrder   = (awb)                 => _track({ awb }).then(r => r.data);
-export const syncAllShiprocket      = ()                    => _syncNow({}).then(r => r.data);
+export const trackShiprocketOrder = (awb) =>
+  callFn("shiprocket-track", { awb }, { requireAuth: true });
+
+export const syncAllShiprocket = () =>
+  callFn("shiprocket-sync", {}, { requireAuth: true });
+
+export const testShiprocketLogin = (email, password) =>
+  callFn("shiprocket-test", { email, password }, { requireAuth: true });

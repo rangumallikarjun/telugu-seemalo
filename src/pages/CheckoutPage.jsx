@@ -7,6 +7,7 @@ import { collectDeviceFingerprint } from "../utils/deviceFingerprint";
 import { notifyOrderPlaced } from "../firebase/notificationService";
 import { validateCoupon, calcStackedDiscounts, applyCouponUsage, recordCouponRedemption, getPublicCoupons } from "../firebase/couponService";
 import { debitWallet, subscribeWalletBalance, rechargeWallet } from "../firebase/walletService";
+import { pushOrderToShiprocket } from "../services/shiprocketService";
 import RazorpayModal from "../components/RazorpayModal";
 
 // ── India address data ───────────────────────────────────────────────────────
@@ -399,13 +400,21 @@ export default function CheckoutPage({cart, setPage, setCart, setLastOrder, user
       paymentStatus:      paymentId ? "paid" : (amountToPay === 0 && walletApplied > 0 ? "wallet" : "cod"),
       _device: deviceInfo,   // stored for admin security / fraud review only
     };
-    await createOrder(orderData);
+    const orderDocId = await createOrder(orderData);
     await Promise.all(appliedCoupons.map(c => applyCouponUsage(c.docId)));
     await Promise.all(appliedCoupons.map(c => recordCouponRedemption(c, {
       email: addr.email, phone: addr.phone, userId: user?.uid || null, orderId,
     })));
     notifyOrderPlaced(orderData);
-    setLastOrder({ ...orderData, docId: orderId });
+
+    // Auto-create the ShipRocket shipment for prepaid / wallet orders
+    // (COD is pushed by the admin from Admin → Orders). Non-blocking.
+    if (paymentId || orderData.paymentStatus === "wallet") {
+      pushOrderToShiprocket(orderDocId, paymentId).catch(e =>
+        console.warn("ShipRocket auto-push failed (admin can retry):", e.message)
+      );
+    }
+    setLastOrder({ ...orderData, docId: orderDocId });
     setCart([]);
     setPage("success", { replace: true });
     setPlacing(false);

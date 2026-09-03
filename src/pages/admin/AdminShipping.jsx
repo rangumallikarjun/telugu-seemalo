@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { app } from "../../firebase/config";
-const _testSR = httpsCallable(getFunctions(app), "shiprocketTestLogin");
+import { testShiprocketLogin } from "../../services/shiprocketService";
 
 const CARRIERS = [
   {
@@ -108,7 +106,7 @@ export default function AdminShipping() {
       if (id === "shiprocket") {
         const cfg = form.carriers.shiprocket;
         if (!cfg?.email || !cfg?.password) throw new Error("Fill email and password first");
-        await _testSR({ email: cfg.email, password: cfg.password });
+        await testShiprocketLogin(cfg.email, cfg.password);
         setTestMsg(prev => ({ ...prev, [id]: "✓ ShipRocket login successful!" }));
       } else {
         const hasKey = CARRIERS.find(c => c.id === id).fields.every(f => form.carriers[id]?.[f.key]);

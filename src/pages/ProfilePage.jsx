@@ -8,7 +8,7 @@ import { db } from "../firebase/config";
 import { fmt, NoImageIcon } from "../utils/helpers";
 import { subscribeOrdersByUser, cancelOrder } from "../firebase/orderService";
 import { notifyOrderCancelled } from "../firebase/notificationService";
-import { callProcessRefund, callListSavedCards, callDeleteSavedCard } from "../services/razorpayService";
+import { callProcessRefund } from "../services/razorpayService";
 import { logout, changePassword, unlinkGoogle, getLinkedProviders } from "../firebase/authService";
 import { generateOtp, sendOtp, sendConfirmationEmail } from "../firebase/otpService";
 import InvoiceModal from "../components/InvoiceModal";
@@ -379,9 +379,6 @@ function PaymentSection({ uid }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]         = useState(BLANK_PAY);
   const [saving, setSaving]     = useState(false);
-  const [savedCards, setSavedCards]   = useState([]);
-  const [cardsLoading, setCardsLoading] = useState(true);
-  const [deletingCard, setDeletingCard] = useState(null);
 
   useEffect(() => {
     getDoc(doc(db, "users", uid)).then(snap => {
@@ -389,29 +386,6 @@ function PaymentSection({ uid }) {
       setLoadDone(true);
     }).catch(() => setLoadDone(true));
   }, [uid]);
-
-  // Real cards the customer saved inside the Razorpay window (masked info only)
-  useEffect(() => {
-    let alive = true;
-    callListSavedCards()
-      .then(res => { if (alive) setSavedCards(res.data?.cards || []); })
-      .catch(() => {})
-      .finally(() => { if (alive) setCardsLoading(false); });
-    return () => { alive = false; };
-  }, [uid]);
-
-  const removeSavedCard = async (tokenId) => {
-    if (!window.confirm("Remove this saved card? You'll need to re-enter it next time.")) return;
-    setDeletingCard(tokenId);
-    try {
-      await callDeleteSavedCard({ tokenId });
-      setSavedCards(cs => cs.filter(c => c.id !== tokenId));
-    } catch {
-      alert("Could not remove the card. Please try again.");
-    } finally {
-      setDeletingCard(null);
-    }
-  };
 
   const persist = async (list) => {
     setMethods(list);
@@ -461,50 +435,6 @@ function PaymentSection({ uid }) {
         </button>
       </div>
 
-      {/* ── Real saved cards (held securely by Razorpay) ── */}
-      <div style={{ marginBottom:20 }}>
-        <div style={{ fontSize:".8rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em",
-          color:"#6B4C38", marginBottom:10 }}>
-          Saved Cards
-        </div>
-        {cardsLoading ? (
-          <div style={{ fontSize:".84rem", color:"var(--mt)" }}>Loading your saved cards…</div>
-        ) : savedCards.length === 0 ? (
-          <div style={{ background:"#F8F4F0", borderRadius:10, padding:"12px 14px", fontSize:".8rem",
-            color:"#6B4C38", lineHeight:1.55 }}>
-            No saved cards yet. When you pay at checkout, tick <strong>“Save this card for later”</strong> in
-            the Razorpay window — it will appear here and be offered automatically next time.
-            Your full card number is never stored on this site.
-          </div>
-        ) : (
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            {savedCards.map(c => (
-              <div key={c.id} style={{ display:"flex", alignItems:"center", gap:12,
-                border:"1.5px solid var(--bd)", borderRadius:12, padding:"14px 16px", background:"#fff" }}>
-                <span style={{ fontSize:"1.2rem" }}>💳</span>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontWeight:700, fontSize:".9rem", textTransform:"capitalize" }}>
-                    {c.network || "Card"} •••• {c.last4}
-                  </div>
-                  <div style={{ fontSize:".78rem", color:"var(--mt)" }}>
-                    {[c.issuer, c.type && `${c.type} card`, c.expiry && `exp ${c.expiry}`].filter(Boolean).join(" · ")}
-                  </div>
-                </div>
-                <button onClick={() => removeSavedCard(c.id)} disabled={deletingCard === c.id}
-                  style={{ background:"none", border:"1px solid #FADBD8", borderRadius:7, padding:"5px 12px",
-                    cursor:"pointer", fontSize:".78rem", color:"#C0392B", fontFamily:"DM Sans,sans-serif" }}>
-                  {deletingCard === c.id ? "Removing…" : "Remove"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ fontSize:".8rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".06em",
-        color:"#6B4C38", marginBottom:10 }}>
-        Preferred Method (note only)
-      </div>
       <div style={{ background:"#F8F4F0", borderRadius:10, padding:"10px 14px", fontSize:".8rem",
         color:"#6B4C38", lineHeight:1.55, marginBottom:16 }}>
         A reminder of how you like to pay — nothing here is stored securely or charged.

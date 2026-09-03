@@ -1,0 +1,17 @@
+# Netlify build + serverless functions (free tier)
+# Functions replace the Firebase Cloud Functions that needed the paid Blaze plan.
+
+[build]
+  command   = "npm run build"
+  publish   = "build"
+  functions = "netlify/functions"
+
+[build.environment]
+  # CRA treats warnings as errors when CI=true — keep the (harmless) source-map
+  # warning from breaking the deploy.
+  CI = "false"
+  NODE_VERSION = "18"
+
+[functions]
+  node_bundler         = "esbuild"
+  external_node_modules = ["firebase-admin"]
