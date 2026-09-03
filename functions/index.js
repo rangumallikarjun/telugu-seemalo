@@ -295,19 +295,42 @@ exports.razorpayWebhook = onRequest(
   }
 );
 
+// Wrap a callable so uncaught errors reach the client with a real message.
+// firebase-functions v2 otherwise hides them as a bare "internal".
+const srCallable = (handler) => onCall(async (request) => {
+  try {
+    return await handler(request);
+  } catch (err) {
+    if (err instanceof HttpsError) throw err;
+    console.error("ShipRocket function error:", err?.stack || err);
+    throw new HttpsError("internal", err?.message ? String(err.message) : String(err));
+  }
+});
+
 // ── Shared: build ShipRocket order payload ───────────────────────────────────
 async function buildSRPayload(orderId, order) {
   const settingsSnap = await admin.firestore().doc("settings/shipping").get();
-  const channelId    = settingsSnap.data()?.carriers?.shiprocket?.channelId || "";
+  const sr           = settingsSnap.data()?.carriers?.shiprocket || {};
+  const channelId    = sr.channelId || "";
+  const pickupLocation = (sr.pickupLocation || sr.pickup_location || "").trim();
   const addr = order.addr || {};
 
   // ShipRocket requires exactly 10-digit phone and 6-digit pincode
   const phone   = (addr.phone || order.phone || "").replace(/\D/g, "").slice(-10);
   const pincode = (addr.pin || addr.pincode || addr.zip || "").replace(/\D/g, "");
 
+  if (!pickupLocation)
+    throw new HttpsError("failed-precondition",
+      "Set the ShipRocket 'Pickup Location' name (exactly as in your ShipRocket panel) in Admin → Shipping.");
+  if (phone.length !== 10)
+    throw new HttpsError("failed-precondition", `Order ${orderId} has an invalid phone number for ShipRocket (needs 10 digits).`);
+  if (pincode.length !== 6)
+    throw new HttpsError("failed-precondition", `Order ${orderId} has an invalid PIN code for ShipRocket (needs 6 digits).`);
+
   return {
     order_id:              orderId,
     order_date:            new Date().toISOString().slice(0, 10),
+    pickup_location:       pickupLocation,
     ...(channelId ? { channel_id: channelId } : {}),
     billing_customer_name: addr.name || order.billingName || "",
     billing_last_name:     "",
@@ -336,7 +359,7 @@ async function buildSRPayload(orderId, order) {
 }
 
 // ── ShipRocket: manually push any existing order to ShipRocket ───────────────
-exports.shiprocketPushOrder = onCall(async (request) => {
+exports.shiprocketPushOrder = srCallable(async (request) => {
   if (!request.auth)
     throw new HttpsError("unauthenticated", "Login required");
 
@@ -359,12 +382,19 @@ exports.shiprocketPushOrder = onCall(async (request) => {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });
   } catch (err) {
-    const srMsg = err.response?.data?.message
-      || err.response?.data?.errors
-      || JSON.stringify(err.response?.data)
-      || err.message;
+    const d = err.response?.data;
+    const srMsg = d?.message
+      || (d?.errors && (typeof d.errors === "string" ? d.errors : JSON.stringify(d.errors)))
+      || (d ? JSON.stringify(d) : err.message);
     console.error("ShipRocket API error:", srMsg, "| Payload:", JSON.stringify(payload));
     throw new HttpsError("internal", `ShipRocket: ${srMsg}`);
+  }
+
+  // ShipRocket sometimes returns HTTP 200 with an error in the body
+  if (!res.data?.order_id && !res.data?.shipment_id) {
+    const srMsg = res.data?.message || res.data?.errors || JSON.stringify(res.data);
+    console.error("ShipRocket rejected order:", srMsg, "| Payload:", JSON.stringify(payload));
+    throw new HttpsError("internal", `ShipRocket: ${typeof srMsg === "string" ? srMsg : JSON.stringify(srMsg)}`);
   }
 
   const update = {
@@ -380,7 +410,7 @@ exports.shiprocketPushOrder = onCall(async (request) => {
 });
 
 // ── ShipRocket: assign AWB + generate pickup (called from AdminOrders) ───────
-exports.shiprocketAssignAWB = onCall(async (request) => {
+exports.shiprocketAssignAWB = srCallable(async (request) => {
     if (!request.auth)
       throw new HttpsError("unauthenticated", "Login required");
 
@@ -391,13 +421,23 @@ exports.shiprocketAssignAWB = onCall(async (request) => {
     const token = await getSRToken();
 
     // Assign AWB (auto-selects best courier)
-    const awbRes = await axios.post(
-      `${SR_BASE}/courier/assign/awb`,
-      { shipment_id: [String(shipmentId)] },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    let awbRes;
+    try {
+      awbRes = await axios.post(
+        `${SR_BASE}/courier/assign/awb`,
+        { shipment_id: [String(shipmentId)] },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      const d = err.response?.data;
+      throw new HttpsError("internal", `ShipRocket AWB: ${d?.message || JSON.stringify(d) || err.message}`);
+    }
 
     const awbData = awbRes.data?.response?.data || {};
+    if (!awbData.awb_code) {
+      throw new HttpsError("internal",
+        `ShipRocket did not assign an AWB: ${awbRes.data?.message || JSON.stringify(awbRes.data)}`);
+    }
 
     // Generate pickup request
     await axios.post(
@@ -422,7 +462,7 @@ exports.shiprocketAssignAWB = onCall(async (request) => {
 );
 
 // ── ShipRocket: track order by AWB ──────────────────────────────────────────
-exports.shiprocketTrack = onCall(async (request) => {
+exports.shiprocketTrack = srCallable(async (request) => {
     const { awb } = request.data;
     if (!awb) throw new HttpsError("invalid-argument", "awb is required");
 
@@ -600,7 +640,7 @@ exports.syncShiprocketStatuses = onSchedule("every 30 minutes", async () => {
 });
 
 // ── Callable: on-demand sync for all active orders (triggered by admin UI) ────
-exports.syncShiprocketNow = onCall(async (request) => {
+exports.syncShiprocketNow = srCallable(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
   const db   = admin.firestore();
   const snap = await db.collection("orders")

@@ -15,6 +15,7 @@ const CARRIERS = [
       { key: "email",    label: "Account Email",   type: "email",    placeholder: "you@example.com" },
       { key: "password", label: "Account Password", type: "password", placeholder: "••••••••" },
       { key: "channelId",label: "Channel ID",       type: "text",     placeholder: "123456" },
+      { key: "pickupLocation", label: "Pickup Location Name", type: "text", placeholder: "e.g. Primary  (must match ShipRocket panel exactly)" },
     ],
   },
   {
