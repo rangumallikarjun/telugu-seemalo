@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "../firebase/config";
 import { getProducts } from "../firebase/productService";
 import ProductCard from "../components/ProductCard";
 import { fmt, NoImageIcon } from "../utils/helpers";
 import { getRecentlyViewed } from "../utils/recentlyViewed";
 import { useProductCategories } from "../hooks/useProductCategories";
+
+const DEFAULT_SUBTITLE = "Authentic Cheriyal crafts from Karimnagar, Telangana";
 
 const PER_PAGE = 30;
 
@@ -15,9 +19,13 @@ export default function ShopPage({ onOpen, onAdd }) {
   const [q, setQ]                 = useState("");
   const [page, setPage]           = useState(1);
   const [viewAll, setViewAll]     = useState(false);
+  const [subtitle, setSubtitle]   = useState(DEFAULT_SUBTITLE);
 
   useEffect(() => {
     getProducts().then(p => { setProducts(p); setLoading(false); });
+    getDoc(doc(db, "settings", "store"))
+      .then(s => { const t = s.exists() && s.data().shopSubtitle; if (t !== undefined && t !== "") setSubtitle(t); })
+      .catch(() => {});
   }, []);
 
   // Search queries fired from the nav bar's search box
@@ -55,7 +63,7 @@ export default function ShopPage({ onOpen, onAdd }) {
       <div className="sec-hd">
         <h2>Our Collection</h2>
         <div className="divider" />
-        <p>Authentic Cheriyal crafts from Karimnagar, Telangana</p>
+        <p>{subtitle}</p>
       </div>
       <div style={{ maxWidth: 440, margin: "0 auto 24px" }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search products…"

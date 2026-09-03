@@ -13,6 +13,8 @@ const STORE_DEFAULTS = {
   contactPhoneHours: "Mon–Sat · 10 AM – 6 PM IST",
   footerDescription: "Authentic Cheriyal lacquer art from Karimnagar, Telangana. Supporting artisan families since 2020.",
   footerBadgeText: "🏅 Cheriyal Art is an authentic heritage craft of Telangana, India",
+  shopSubtitle: "Authentic Cheriyal crafts from Karimnagar, Telangana",
+  productBadgeText: "Authentic Craft · Karimnagar, Telangana",
   appStoreUrl: "",
   playStoreUrl: "",
   returnDays: 7,
@@ -346,6 +348,20 @@ export default function AdminSettings() {
               <label>Return Window (days)</label>
               <input type="number" value={form.returnDays} onChange={e => set("returnDays", +e.target.value)}/>
             </div>
+          </div>
+
+          <SectionLabel>Storefront Text</SectionLabel>
+          <div className="admin-inp-grp">
+            <label>Shop Page Subtitle</label>
+            <input value={form.shopSubtitle} onChange={e => set("shopSubtitle", e.target.value)}
+              placeholder="Authentic Cheriyal crafts from Karimnagar, Telangana"/>
+            <span style={{fontSize:".73rem",color:"#6B4C38",marginTop:4,display:"block"}}>Shown under “Our Collection” on the shop page</span>
+          </div>
+          <div className="admin-inp-grp" style={{marginBottom:16}}>
+            <label>Product Page Craft Badge</label>
+            <input value={form.productBadgeText} onChange={e => set("productBadgeText", e.target.value)}
+              placeholder="Authentic Craft · Karimnagar, Telangana"/>
+            <span style={{fontSize:".73rem",color:"#6B4C38",marginTop:4,display:"block"}}>The 🏷️ pill on each product page (leave blank to hide)</span>
           </div>
 
           <SectionLabel>Footer</SectionLabel>

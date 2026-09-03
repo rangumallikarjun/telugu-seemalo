@@ -609,6 +609,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
   const [viewerCfg, setViewerCfg] = useState({ enabled: true, min: 12, max: 68 });
   const [stickyVisible, setStickyVisible] = useState(false);
   const [storePhone, setStorePhone] = useState("");
+  const [craftBadge, setCraftBadge] = useState("Authentic Craft · Karimnagar, Telangana");
   const [customOpen, setCustomOpen] = useState(false);
   const atcRef = useRef(null);
 
@@ -641,6 +642,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
             max: d.viewerMax || 68,
           });
           setStorePhone(d.phone || "");
+          if (d.productBadgeText !== undefined) setCraftBadge(d.productBadgeText);
         }
       })
       .catch(() => {});
@@ -740,7 +742,7 @@ export default function ProductPage({p, onBack, onAdd, onOpen, related, user}) {
                 </>
               )}
             </div>
-            <div className="pd-gi">🏷️ Authentic Craft · Karimnagar, Telangana</div>
+            {craftBadge && <div className="pd-gi">🏷️ {craftBadge}</div>}
             {viewers !== null && (
               <div className="viewer-badge">
                 <span className="viewer-dot"/>
