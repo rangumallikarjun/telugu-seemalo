@@ -25,6 +25,7 @@ const STORE_DEFAULTS = {
   viewerMin: 12,
   viewerMax: 68,
   roomBuilderEnabled: true,
+  chatEnabled: true,
 };
 
 const TAX_DEFAULTS = {
@@ -461,6 +462,24 @@ export default function AdminSettings() {
               style={{width:44,height:24,borderRadius:12,background: form.roomBuilderEnabled ? "#E8620A" : "#D1C5BB",
                 position:"relative",transition:"background .2s",cursor:"pointer",flexShrink:0}}>
               <div style={{position:"absolute",top:3,left: form.roomBuilderEnabled ? 22 : 3,width:18,height:18,
+                borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+            </div>
+          </div>
+
+          <SectionLabel>Live Chat</SectionLabel>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",
+            background: form.chatEnabled ? "#FFF3ED" : "#F8F4F0", borderRadius:10, marginBottom:16,
+            border:`1.5px solid ${form.chatEnabled ? "#E8620A" : "#E8D5C0"}`}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:".95rem",color:"#18100A"}}>Show live chat widget</div>
+              <div style={{fontSize:".8rem",color:"#6B4C38",marginTop:2}}>
+                {form.chatEnabled ? "The Tawk.to chat bubble is shown on the site" : "The chat bubble is hidden and its script is not loaded"}
+              </div>
+            </div>
+            <div onClick={() => set("chatEnabled", !form.chatEnabled)}
+              style={{width:44,height:24,borderRadius:12,background: form.chatEnabled ? "#E8620A" : "#D1C5BB",
+                position:"relative",transition:"background .2s",cursor:"pointer",flexShrink:0}}>
+              <div style={{position:"absolute",top:3,left: form.chatEnabled ? 22 : 3,width:18,height:18,
                 borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
             </div>
           </div>

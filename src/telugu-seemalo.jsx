@@ -125,23 +125,39 @@ export default function App() {
     }).catch(() => {});
   }, []);
 
-  // Room Builder can be toggled off from Admin → Settings
+  // Room Builder + Live Chat can be toggled off from Admin → Settings
   const [roomBuilderEnabled, setRoomBuilderEnabled] = useState(true);
+  const [chatEnabled, setChatEnabled] = useState(false);
   useEffect(() => {
     getDoc(doc(db, "settings", "store")).then(snap => {
-      if (snap.exists() && snap.data().roomBuilderEnabled === false) setRoomBuilderEnabled(false);
-    }).catch(() => {});
+      const d = snap.exists() ? snap.data() : {};
+      if (d.roomBuilderEnabled === false) setRoomBuilderEnabled(false);
+      setChatEnabled(d.chatEnabled !== false);   // default on
+    }).catch(() => setChatEnabled(true));
   }, []);
 
-  // Hide the Tawk.to support widget while the cart drawer or checkout page is open
+  // Load the Tawk.to chat script once, only when enabled
   useEffect(() => {
-    const shouldHide = cartOpen || page === "checkout";
+    if (!chatEnabled) return;
+    if (document.getElementById("tawk-embed")) return;
+    const s = document.createElement("script");
+    s.id = "tawk-embed";
+    s.async = true;
+    s.src = "https://embed.tawk.to/6a1789cc4298741c3c115eee/1jplv4hmb";
+    s.charset = "UTF-8";
+    s.setAttribute("crossorigin", "*");
+    document.body.appendChild(s);
+  }, [chatEnabled]);
+
+  // Hide the Tawk.to widget while the cart drawer / checkout is open, or if disabled
+  useEffect(() => {
+    const shouldHide = !chatEnabled || cartOpen || page === "checkout";
     const apply = () => { shouldHide ? window.Tawk_API?.hideWidget?.() : window.Tawk_API?.showWidget?.(); };
     apply();
     // In case Tawk's script hasn't finished loading yet, re-apply once it's ready
     window.Tawk_API = window.Tawk_API || {};
     window.Tawk_API.onLoad = apply;
-  }, [cartOpen, page]);
+  }, [cartOpen, page, chatEnabled]);
 
   useEffect(() => {
     const unsub = onAuthChange(userData => {
